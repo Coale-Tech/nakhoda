@@ -229,6 +229,44 @@ here, not later.**
 > while staying under a fixed per-question token budget. This gate exists because §7
 > risk 5 locates the residual risk here.
 
+**Measured, 2026-08-12.** Gate A holds (`test_semantic.py`, byte-equal against the
+artifact). Gate B holds at **37/40 = 92.5%** under 7,843 tokens on `gardatest.local`
+— 1,011 non-single DocTypes, 187,242 tokens rendered whole, a 24x cut. The scale
+figure above understated this bench: 1,011 DocTypes, not 529, because a live site
+carries installed apps the stock count does not.
+
+Two line items above did not survive measurement, and the plan is wrong rather than
+the code. **The Link-derived join graph does not belong in ranking.** Scoring a
+table for being joinable to one already chosen won one question and lost another —
+net zero — because in an ERP the near-duplicates link to each other too (`POS
+Invoice` references `Sales Invoice` through `consolidated_invoice`), so adjacency
+promotes the alternative as readily as the complement. The join graph stays where it
+is useful: rendered into the table description, which is how the model writes the
+join. **`.po` catalogues as the synonym source** were not reached, for two reasons.
+They are cross-lingual and the benchmark is English, so they could not have moved
+these forty questions either way; and the data is not there anyway — none of
+Frappe's 33 `locale/*.po` files carries a bare DocType name as a `msgid`, and
+ERPNext's 71 `translations/*.csv` are validation messages, not labels. If a synonym
+source is wanted later it has to be built, not harvested.
+
+What replaced both is smaller: evidence weighted by *where in the schema it was
+found*, and a usage prior. Enum values are controlled vocabulary the schema commits
+to; labels and descriptions are prose, and prose is where the false friends live —
+`Item.no_of_months` is labelled "No of Months (Revenue)", which made `Item` the top
+hit for every revenue question until the two were scored apart.
+
+The largest single contributor is the usage prior — a table with no rows cannot
+answer a question about what the business did. Removing it costs 18 of 40 questions,
+more than every lexical weight combined. That is a fact about the deployment rather
+than the benchmark, and it is the part of this design least likely to transfer to a
+paper and most likely to matter in production.
+
+`test_retrieval.py::test_each_mechanism_earns_its_place` zeroes each weight in turn
+and fails if recall survives. It has already deleted three mechanisms — the join
+graph bonus, a link-word weight, and a currency bonus gated on a hand-written
+English money lexicon — and deleting all three moved recall from 90.0% to 92.5%.
+Nothing in retrieval now reads a list of English words.
+
 ### Phase 2 — Eval harness
 `Nakhoda Benchmark Set`; re-implement §6.0's paired protocol in-app; wire to CI.
 Seeded from `semantic-bench/`, which reproduced exactly on a from-scratch rebuild
