@@ -1,0 +1,2162 @@
+[
+ {
+  "qid": "q01",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS customer_count FROM \"tabCustomer\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q02",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT \"territory_name\" FROM \"tabTerritory\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q03",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS item_count\nFROM \"tabItem\"\nWHERE \"item_group\" = 'Products'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q04",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT MAX(\"standard_rate\") AS max_standard_rate FROM \"tabItem\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q05",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS total_invoices FROM \"tabSales Invoice\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q06",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT SUM(\"base_grand_total\") AS total_sales_revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1 AND \"is_return\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q07",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS invoice_count FROM \"tabSales Invoice\" WHERE docstatus = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q08",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT SUM(\"base_net_total\") AS revenue_2025\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"is_return\" = 0\n  AND \"posting_date\" >= DATE '2025-01-01'\n  AND \"posting_date\" < DATE '2026-01-01'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q09",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT AVG(\"base_grand_total\") AS avg_invoice_value\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1 AND \"is_return\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q10",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT SUM(\"outstanding_amount\" * \"conversion_rate\") AS total_outstanding_company_currency\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q11",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS payments_received FROM \"tabPayment Entry\" WHERE payment_type = 'Receive' AND docstatus = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q12",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT SUM(\"base_paid_amount\") AS total_paid FROM \"tabPayment Entry\" WHERE \"docstatus\" = 1 AND \"payment_type\" = 'Receive'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q13",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS overdue_invoices FROM \"tabSales Invoice\" WHERE status = 'Overdue'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q14",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS fully_paid_invoices FROM \"tabSales Invoice\" WHERE docstatus = 1 AND status = 'Paid'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q15",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT \"status\", COUNT(*) AS invoice_count\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\nGROUP BY \"status\"\nORDER BY invoice_count DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q16",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS partially_paid_invoices\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\n  AND outstanding_amount > 0\n  AND outstanding_amount < grand_total",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q17",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS draft_invoice_count\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q18",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT SUM(\"base_grand_total\") AS total_revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1 AND \"is_return\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q19",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT \"currency\", COUNT(*) AS invoice_count\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\nGROUP BY \"currency\"\nORDER BY invoice_count DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q20",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT \"currency\", SUM(\"base_grand_total\") AS total_revenue_company_currency\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1 AND \"is_return\" = 0\nGROUP BY \"currency\"\nORDER BY total_revenue_company_currency DESC",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 1 unmatched"
+ },
+ {
+  "qid": "q21",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS credit_note_count\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1 AND is_return = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q22",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT SUM(\"base_net_total\") AS gross_revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1 AND \"is_return\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q23",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT ABS(SUM(\"base_grand_total\")) AS total_returned\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1 AND \"is_return\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q24",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT si.\"territory\", SUM(si.\"base_grand_total\") AS revenue\nFROM \"tabSales Invoice\" si\nWHERE si.\"docstatus\" = 1 AND si.\"is_return\" = 0\nGROUP BY si.\"territory\"\nORDER BY revenue DESC\nLIMIT 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q25",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT si.\"territory\", SUM(si.\"base_net_total\") AS revenue\nFROM \"tabSales Invoice\" si\nWHERE si.\"docstatus\" = 1 AND si.\"is_return\" = 0\nGROUP BY si.\"territory\"\nORDER BY revenue DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q26",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT c.\"name\" AS customer, c.\"customer_name\", SUM(si.\"base_grand_total\") AS total_invoiced\nFROM \"tabCustomer\" c\nJOIN \"tabSales Invoice\" si ON si.\"customer\" = c.\"name\" AND si.\"docstatus\" = 1\nWHERE c.\"territory\" = 'Germany'\nGROUP BY c.\"name\", c.\"customer_name\"\nORDER BY total_invoiced DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q27",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT COUNT(DISTINCT c.\"name\") AS active_customers_with_invoice\nFROM \"tabCustomer\" c\nJOIN \"tabSales Invoice\" si ON si.\"customer\" = c.\"name\" AND si.\"docstatus\" = 1\nWHERE COALESCE(c.\"disabled\", 0) = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q28",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT \"name\", \"territory_name\", \"is_group\" FROM \"tabTerritory\" WHERE \"parent_territory\" = 'India' ORDER BY \"territory_name\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q29",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT sii.\"item_code\", SUM(sii.\"qty\") AS total_units\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si ON si.\"name\" = sii.\"parent\"\nWHERE si.\"docstatus\" = 1 AND si.\"is_return\" = 0\nGROUP BY sii.\"item_code\"\nORDER BY total_units DESC\nLIMIT 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q30",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT sii.item_code, SUM(sii.base_net_amount) AS revenue\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si ON si.name = sii.parent\nWHERE si.docstatus = 1\nGROUP BY sii.item_code\nORDER BY revenue DESC\nLIMIT 5",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q31",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS line_item_count\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si ON si.\"name\" = sii.\"parent\"\nWHERE si.\"docstatus\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q32",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT AVG(line_count) AS avg_line_items_per_invoice\nFROM (\n  SELECT si.\"name\", COUNT(sii.\"name\") AS line_count\n  FROM \"tabSales Invoice\" si\n  JOIN \"tabSales Invoice Item\" sii ON sii.\"parent\" = si.\"name\"\n  WHERE si.\"docstatus\" = 1\n  GROUP BY si.\"name\"\n) t",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q33",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT i.\"item_group\", SUM(sii.\"base_net_amount\") AS revenue\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si ON si.\"name\" = sii.\"parent\"\nJOIN \"tabItem\" i ON i.\"name\" = sii.\"item_code\"\nWHERE si.\"docstatus\" = 1\nGROUP BY i.\"item_group\"\nORDER BY revenue DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q34",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT sii.\"item_group\", SUM(sii.\"base_net_amount\") AS total_value\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si ON si.\"name\" = sii.\"parent\"\nJOIN \"tabCustomer\" c ON c.\"name\" = si.\"customer\"\nWHERE si.\"docstatus\" = 1\n  AND si.\"is_return\" = 0\n  AND c.\"territory\" = 'Karnataka'\nGROUP BY sii.\"item_group\"\nORDER BY total_value DESC\nLIMIT 1",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q35",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT si.\"customer_name\", SUM(si.\"base_grand_total\") AS revenue\nFROM \"tabSales Invoice\" si\nWHERE si.\"docstatus\" = 1 AND si.\"is_return\" = 0\nGROUP BY si.\"customer_name\"\nORDER BY revenue DESC\nLIMIT 3",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q36",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT \"item_name\", \"standard_rate\" FROM \"tabItem\" ORDER BY \"standard_rate\" DESC LIMIT 3",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q37",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT date_trunc('month', \"posting_date\") AS month,\n       SUM(\"base_grand_total\") AS revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"is_return\" = 0\n  AND \"posting_date\" >= DATE '2026-01-01'\n  AND \"posting_date\" < DATE '2027-01-01'\nGROUP BY 1\nORDER BY 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q38",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT SUM(\"base_net_total\") AS net_revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"posting_date\" >= DATE '2026-01-01'\n  AND \"posting_date\" < DATE '2027-01-01'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q39",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT territory, AVG(base_grand_total) AS avg_invoice_value, COUNT(*) AS invoice_count\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1 AND COALESCE(is_return, 0) = 0\nGROUP BY territory\nORDER BY avg_invoice_value DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q40",
+  "ctx": "A_raw",
+  "model": "default",
+  "sql": "SELECT i.\"item_group\", COUNT(DISTINCT sii.\"item_code\") AS distinct_items_sold\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si ON si.\"name\" = sii.\"parent\" AND si.\"docstatus\" = 1\nJOIN \"tabItem\" i ON i.\"name\" = sii.\"item_code\"\nGROUP BY i.\"item_group\"\nORDER BY distinct_items_sold DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q01",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) FROM \"tabCustomer\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q02",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT \"name\" FROM \"tabTerritory\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q03",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) as item_count\nFROM \"tabItem\"\nWHERE \"item_group\" = 'Products'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q04",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT MAX(\"standard_rate\") FROM \"tabItem\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q05",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) FROM \"tabSales Invoice\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q06",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT SUM(\"grand_total\") as total_sales_revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\nAND \"is_return\" = 0",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q07",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) as invoice_count\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q08",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT SUM(\"grand_total\") as revenue\nFROM \"tabSales Invoice\"\nWHERE YEAR(\"posting_date\") = 2025\nAND \"is_return\" = 0\nAND \"docstatus\" = 1",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q09",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT AVG(\"grand_total\") as average_invoice_value\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\nAND \"is_return\" = 0",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q10",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT SUM(\"outstanding_amount\") as total_outstanding_amount\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q11",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) AS payment_count FROM \"tabPayment Entry\" WHERE \"docstatus\" = 1 AND \"payment_type\" = 'Receive'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q12",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT SUM(\"base_paid_amount\") AS total_paid_amount FROM \"tabPayment Entry\" WHERE \"docstatus\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q13",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) as overdue_invoices\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\nAND \"due_date\" < CURRENT_DATE\nAND \"outstanding_amount\" > 0",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q14",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) FROM \"tabSales Invoice\" WHERE \"docstatus\" = 1 AND \"outstanding_amount\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q15",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT \"status\", COUNT(*) as invoice_count\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\nGROUP BY \"status\"\nORDER BY invoice_count DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q16",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT COUNT(DISTINCT \"name\") as partially_paid_invoices\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\nAND \"outstanding_amount\" > 0\nAND \"paid_amount\" > 0",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q17",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) FROM \"tabSales Invoice\" WHERE \"docstatus\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q18",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT SUM(\"base_grand_total\") as total_revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\nAND \"is_return\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q19",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT \"currency\", COUNT(*) as invoice_count\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\nGROUP BY \"currency\"\nORDER BY invoice_count DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q20",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT\n  \"currency\",\n  SUM(\"base_grand_total\") AS total_revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\nGROUP BY \"currency\"\nORDER BY total_revenue DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q21",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) as credit_notes_and_returns_count\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\nAND (\"is_return\" = 1 OR \"is_debit_note\" = 1)",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q22",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT SUM(\"grand_total\") as gross_revenue FROM \"tabSales Invoice\" WHERE \"docstatus\" = 1 AND \"is_return\" = 0",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q23",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT ABS(SUM(\"grand_total\")) AS total_credited_to_customers\nFROM \"tabSales Invoice\"\nWHERE \"is_return\" = 1 AND \"docstatus\" = 1",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q24",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT \n  \"territory\",\n  SUM(\"grand_total\") AS total_revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"is_return\" = 0\nGROUP BY \"territory\"\nORDER BY total_revenue DESC\nLIMIT 1",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q25",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT \n  t.\"territory_name\",\n  SUM(si.\"grand_total\") as revenue\nFROM \"tabSales Invoice\" si\nJOIN \"tabTerritory\" t ON si.\"territory\" = t.\"name\"\nWHERE si.\"docstatus\" = 1\n  AND si.\"is_return\" = 0\nGROUP BY t.\"territory_name\"\nORDER BY revenue DESC",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q26",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT \n  \"c\".\"name\",\n  \"c\".\"customer_name\",\n  SUM(\"si\".\"grand_total\") AS \"total_invoiced\"\nFROM \"tabCustomer\" \"c\"\nINNER JOIN \"tabSales Invoice\" \"si\" ON \"c\".\"name\" = \"si\".\"customer\"\nWHERE \"c\".\"territory\" = 'Germany'\n  AND \"si\".\"docstatus\" = 1\nGROUP BY \"c\".\"name\", \"c\".\"customer_name\"\nORDER BY \"total_invoiced\" DESC",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 1 unmatched"
+ },
+ {
+  "qid": "q27",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT COUNT(DISTINCT c.\"name\")\nFROM \"tabCustomer\" c\nINNER JOIN \"tabSales Invoice\" si ON c.\"name\" = si.\"customer\"\nWHERE c.\"disabled\" = 0\nAND si.\"docstatus\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q28",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT \"name\"\nFROM \"tabTerritory\"\nWHERE \"parent_territory\" = 'India'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q29",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT\n  \"item_code\",\n  SUM(\"qty\") AS total_qty\nFROM \"tabSales Invoice Item\"\nWHERE \"parent\" IN (\n  SELECT \"name\"\n  FROM \"tabSales Invoice\"\n  WHERE \"docstatus\" = 1\n    AND \"is_return\" = 0\n)\nGROUP BY \"item_code\"\nORDER BY total_qty DESC\nLIMIT 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q30",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT \n  i.\"item_code\",\n  i.\"item_name\",\n  SUM(sii.\"amount\") AS total_revenue\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabItem\" i ON sii.\"item_code\" = i.\"item_code\"\nJOIN \"tabSales Invoice\" si ON sii.\"parent\" = si.\"name\"\nWHERE si.\"docstatus\" = 1\nGROUP BY i.\"item_code\", i.\"item_name\"\nORDER BY total_revenue DESC\nLIMIT 5",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "0 rows vs 5 gold"
+ },
+ {
+  "qid": "q31",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) FROM \"tabSales Invoice Item\" WHERE \"parent\" IN (SELECT \"name\" FROM \"tabSales Invoice\" WHERE \"docstatus\" = 1)",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q32",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT AVG(item_count) AS average_line_items_per_invoice\nFROM (\n  SELECT \"parent\", COUNT(*) AS item_count\n  FROM \"tabSales Invoice Item\"\n  WHERE \"parent\" IN (\n    SELECT \"name\"\n    FROM \"tabSales Invoice\"\n    WHERE \"docstatus\" = 1\n  )\n  GROUP BY \"parent\"\n) AS invoice_line_counts",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q33",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT\n  \"tabItem Group\".\"item_group_name\",\n  SUM(\"tabSales Invoice Item\".\"amount\") AS revenue\nFROM \"tabSales Invoice Item\"\nJOIN \"tabSales Invoice\" ON \"tabSales Invoice Item\".\"parent\" = \"tabSales Invoice\".\"name\"\nJOIN \"tabItem\" ON \"tabSales Invoice Item\".\"item_code\" = \"tabItem\".\"item_code\"\nJOIN \"tabItem Group\" ON \"tabItem\".\"item_group\" = \"tabItem Group\".\"name\"\nWHERE \"tabSales Invoice\".\"docstatus\" = 1\nGROUP BY \"tabItem Group\".\"item_group_name\"\nORDER BY revenue DESC",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "0 rows vs 4 gold"
+ },
+ {
+  "qid": "q34",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT \n  \"ig\".\"item_group_name\",\n  SUM(\"sii\".\"base_amount\") as total_value\nFROM \"tabSales Invoice Item\" \"sii\"\nJOIN \"tabSales Invoice\" \"si\" ON \"sii\".\"parent\" = \"si\".\"name\"\nJOIN \"tabCustomer\" \"c\" ON \"si\".\"customer\" = \"c\".\"name\"\nJOIN \"tabItem\" \"i\" ON \"sii\".\"item_code\" = \"i\".\"item_code\"\nJOIN \"tabItem Group\" \"ig\" ON \"i\".\"item_group\" = \"ig\".\"name\"\nWHERE \"c\".\"territory\" = 'Karnataka'\n  AND \"si\".\"docstatus\" = 1\nGROUP BY \"ig\".\"item_group_name\"\nORDER BY total_value DESC\nLIMIT 1",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "0 rows vs 1 gold"
+ },
+ {
+  "qid": "q35",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT \n  \"customer_name\",\n  SUM(\"grand_total\") as total_revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1 AND \"is_return\" = 0\nGROUP BY \"customer_name\"\nORDER BY total_revenue DESC\nLIMIT 3",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q36",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT \"item_name\", \"standard_rate\"\nFROM \"tabItem\"\nWHERE \"standard_rate\" IS NOT NULL\nORDER BY \"standard_rate\" DESC\nLIMIT 3",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q37",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT \n  DATE_TRUNC('month', \"posting_date\")::DATE AS \"month\",\n  SUM(\"grand_total\") AS \"revenue\"\nFROM \"tabSales Invoice\"\nWHERE YEAR(\"posting_date\") = 2026\n  AND \"is_return\" = 0\n  AND \"docstatus\" = 1\nGROUP BY DATE_TRUNC('month', \"posting_date\")\nORDER BY \"month\"",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 1 unmatched"
+ },
+ {
+  "qid": "q38",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT\n  COALESCE(SUM(CASE WHEN \"is_return\" = 0 THEN \"net_total\" ELSE -\"net_total\" END), 0) AS net_revenue\nFROM \"tabSales Invoice\"\nWHERE\n  \"docstatus\" = 1\n  AND YEAR(\"posting_date\") = 2026",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q39",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT \n  t.\"territory_name\",\n  AVG(si.\"grand_total\") as avg_invoice_value\nFROM \"tabSales Invoice\" si\nJOIN \"tabCustomer\" c ON si.\"customer\" = c.\"name\"\nJOIN \"tabTerritory\" t ON c.\"territory\" = t.\"name\"\nWHERE si.\"is_return\" = 0 \n  AND si.\"docstatus\" = 1\nGROUP BY t.\"territory_name\"\nORDER BY avg_invoice_value DESC",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q40",
+  "ctx": "A_raw",
+  "model": "smol",
+  "sql": "SELECT \n  \"ig\".\"item_group_name\",\n  COUNT(DISTINCT \"sii\".\"item_code\") AS \"distinct_items_sold\"\nFROM \"tabSales Invoice Item\" \"sii\"\nJOIN \"tabSales Invoice\" \"si\" ON \"sii\".\"parent\" = \"si\".\"name\"\nJOIN \"tabItem\" \"i\" ON \"sii\".\"item_code\" = \"i\".\"item_code\"\nJOIN \"tabItem Group\" \"ig\" ON \"i\".\"item_group\" = \"ig\".\"name\"\nWHERE \"si\".\"docstatus\" = 1\nGROUP BY \"ig\".\"item_group_name\"\nORDER BY \"distinct_items_sold\" DESC",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "0 rows vs 4 gold"
+ },
+ {
+  "qid": "q01",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS customer_count FROM \"tabCustomer\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q02",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT \"name\" FROM \"tabTerritory\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q03",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS item_count\nFROM \"tabItem\"\nWHERE \"item_group\" = 'Products'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q04",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT MAX(\"standard_rate\") AS max_standard_rate FROM \"tabItem\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q05",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS total_sales_invoices FROM \"tabSales Invoice\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q06",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT SUM(\"base_grand_total\") AS total_sales_revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"is_return\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q07",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS issued_invoice_count\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q08",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT SUM(\"base_net_total\") AS revenue_2025\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"is_return\" = 0\n  AND \"posting_date\" >= DATE '2025-01-01'\n  AND \"posting_date\" < DATE '2026-01-01'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q09",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT AVG(\"grand_total\") AS avg_invoice_value\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND (\"is_return\" = 0 OR \"is_return\" IS NULL)",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q10",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT\n    ROUND(SUM(\"outstanding_amount\" * COALESCE(\"conversion_rate\", 1)), 2) AS total_outstanding_base_currency\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q11",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS payments_received\nFROM \"tabPayment Entry\"\nWHERE \"payment_type\" = 'Receive'\n  AND \"docstatus\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q12",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT SUM(\"base_paid_amount\") AS total_amount_received\nFROM \"tabPayment Entry\"\nWHERE \"docstatus\" = 1\n  AND \"payment_type\" = 'Receive'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q13",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS overdue_invoice_count\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"status\" = 'Overdue'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q14",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS fully_paid_invoices\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"status\" = 'Paid'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q15",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT \"status\", COUNT(*) AS invoice_count\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\nGROUP BY \"status\"\nORDER BY invoice_count DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q16",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS partially_paid_invoices\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\n  AND outstanding_amount > 0\n  AND outstanding_amount < grand_total",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q17",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS draft_invoice_count\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q18",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT SUM(\"base_grand_total\") AS total_revenue_company_currency\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"is_return\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q19",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT \"currency\", COUNT(*) AS invoice_count\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\nGROUP BY \"currency\"\nORDER BY invoice_count DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q20",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT \"currency\", SUM(\"base_grand_total\") AS total_revenue_company_currency\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\nGROUP BY \"currency\"\nORDER BY total_revenue_company_currency DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q21",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS credit_note_count\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"is_return\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q22",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT SUM(\"base_grand_total\") AS gross_revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"is_return\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q23",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT ABS(SUM(\"base_grand_total\")) AS total_credited_returns\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"is_return\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q24",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT\n  si.\"territory\",\n  SUM(si.\"base_grand_total\") AS total_revenue,\n  COUNT(*) AS invoice_count\nFROM \"tabSales Invoice\" si\nWHERE si.\"docstatus\" = 1\n  AND COALESCE(si.\"is_return\", 0) = 0\nGROUP BY si.\"territory\"\nORDER BY total_revenue DESC",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "6 rows vs 1 gold"
+ },
+ {
+  "qid": "q25",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT\n  si.\"territory\" AS territory,\n  SUM(si.\"base_grand_total\") AS revenue,\n  COUNT(*) AS invoice_count\nFROM \"tabSales Invoice\" si\nWHERE si.\"docstatus\" = 1\n  AND COALESCE(si.\"is_return\", 0) = 0\nGROUP BY si.\"territory\"\nORDER BY revenue DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q26",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT\n  c.\"name\" AS customer_id,\n  c.\"customer_name\",\n  COUNT(DISTINCT si.\"name\") AS invoice_count,\n  SUM(si.\"base_grand_total\") AS total_invoiced\nFROM \"tabSales Invoice\" si\nJOIN \"tabCustomer\" c\n  ON c.\"name\" = si.\"customer\"\nWHERE si.\"docstatus\" = 1\n  AND COALESCE(si.\"is_return\", 0) = 0\n  AND c.\"territory\" = 'Germany'\nGROUP BY c.\"name\", c.\"customer_name\"\nORDER BY total_invoiced DESC",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 1 unmatched"
+ },
+ {
+  "qid": "q27",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT COUNT(DISTINCT c.\"name\") AS active_customers_with_invoices\nFROM \"tabCustomer\" c\nJOIN \"tabSales Invoice\" si\n  ON si.\"customer\" = c.\"name\"\n AND si.\"docstatus\" = 1\nWHERE COALESCE(c.\"disabled\", 0) = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q28",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT \"name\", \"territory_name\", \"is_group\", \"territory_manager\"\nFROM \"tabTerritory\"\nWHERE \"parent_territory\" = 'India'\nORDER BY \"territory_name\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q29",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT sii.\"item_code\",\n       ANY_VALUE(sii.\"item_name\") AS \"item_name\",\n       SUM(sii.\"qty\") AS \"total_units\"\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si\n  ON si.\"name\" = sii.\"parent\"\nWHERE si.\"docstatus\" = 1\n  AND COALESCE(si.\"is_return\", 0) = 0\nGROUP BY sii.\"item_code\"\nORDER BY \"total_units\" DESC\nLIMIT 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q30",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT sii.\"item_code\",\n       ANY_VALUE(sii.\"item_name\") AS \"item_name\",\n       SUM(sii.\"base_net_amount\") AS \"revenue\"\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si ON si.\"name\" = sii.\"parent\"\nWHERE si.\"docstatus\" = 1\n  AND COALESCE(si.\"is_return\", 0) = 0\nGROUP BY sii.\"item_code\"\nORDER BY \"revenue\" DESC\nLIMIT 5",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q31",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS line_item_count\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si ON si.\"name\" = sii.\"parent\"\nWHERE si.\"docstatus\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q32",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT AVG(line_count) AS avg_line_items_per_invoice\nFROM (\n  SELECT si.\"name\" AS invoice, COUNT(sii.\"name\") AS line_count\n  FROM \"tabSales Invoice\" si\n  JOIN \"tabSales Invoice Item\" sii ON sii.\"parent\" = si.\"name\"\n  WHERE si.\"docstatus\" = 1\n  GROUP BY si.\"name\"\n) t",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q33",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT\n    COALESCE(sii.\"item_group\", it.\"item_group\", 'Unknown') AS item_group,\n    SUM(sii.\"base_net_amount\")                              AS revenue,\n    SUM(sii.\"stock_qty\")                                    AS total_qty,\n    COUNT(DISTINCT si.\"name\")                               AS invoice_count\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si\n  ON si.\"name\" = sii.\"parent\"\nLEFT JOIN \"tabItem\" it\n  ON it.\"name\" = sii.\"item_code\"\nWHERE si.\"docstatus\" = 1\n  AND COALESCE(si.\"is_return\", 0) = 0\nGROUP BY 1\nORDER BY revenue DESC",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 1 unmatched"
+ },
+ {
+  "qid": "q34",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT\n    i.\"item_group\" AS item_group,\n    SUM(sii.\"base_net_amount\") AS total_value\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si\n    ON si.\"name\" = sii.\"parent\"\n   AND si.\"docstatus\" = 1\nJOIN \"tabCustomer\" c\n    ON c.\"name\" = si.\"customer\"\nLEFT JOIN \"tabItem\" i\n    ON i.\"name\" = sii.\"item_code\"\nWHERE COALESCE(si.\"territory\", c.\"territory\") = 'Karnataka'\nGROUP BY i.\"item_group\"\nORDER BY total_value DESC\nLIMIT 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q35",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT si.\"customer_name\", SUM(si.\"base_grand_total\") AS revenue\nFROM \"tabSales Invoice\" si\nWHERE si.\"docstatus\" = 1\n  AND si.\"is_return\" = 0\nGROUP BY si.\"customer_name\"\nORDER BY revenue DESC\nLIMIT 3",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q36",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT \"item_name\"\nFROM \"tabItem\"\nORDER BY \"standard_rate\" DESC\nLIMIT 3",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q37",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT date_trunc('month', \"posting_date\") AS month,\n       SUM(\"base_grand_total\") AS revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"is_return\" = 0\n  AND \"posting_date\" >= DATE '2026-01-01'\n  AND \"posting_date\" < DATE '2027-01-01'\nGROUP BY 1\nORDER BY 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q38",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT SUM(\"base_net_total\") AS net_revenue_2026\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"posting_date\" >= DATE '2026-01-01'\n  AND \"posting_date\" < DATE '2027-01-01'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q39",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT\n  si.\"territory\",\n  AVG(si.\"base_grand_total\") AS avg_invoice_value,\n  COUNT(*) AS invoice_count\nFROM \"tabSales Invoice\" si\nWHERE si.\"docstatus\" = 1\n  AND si.\"is_return\" = 0\nGROUP BY si.\"territory\"\nORDER BY avg_invoice_value DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q40",
+  "ctx": "A_raw",
+  "model": "slow",
+  "sql": "SELECT\n  i.\"item_group\" AS item_group,\n  COUNT(DISTINCT sii.\"item_code\") AS distinct_items_sold\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si\n  ON si.\"name\" = sii.\"parent\"\n AND si.\"docstatus\" = 1\nJOIN \"tabItem\" i\n  ON i.\"name\" = sii.\"item_code\"\nGROUP BY i.\"item_group\"\nORDER BY distinct_items_sold DESC, item_group",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q01",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS customer_count FROM \"tabCustomer\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q02",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT \"name\" FROM \"tabTerritory\" ORDER BY \"name\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q03",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS item_count FROM \"tabItem\" WHERE item_group = 'Products'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q04",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT MAX(standard_rate) AS max_standard_rate FROM \"tabItem\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q05",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS total_sales_invoices FROM \"tabSales Invoice\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q06",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT SUM(base_grand_total) AS total_sales_revenue\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\n  AND is_return = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q07",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS invoice_count\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q08",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT SUM(\"base_net_total\") AS revenue_2025\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND COALESCE(\"is_return\", 0) = 0\n  AND \"posting_date\" >= DATE '2025-01-01'\n  AND \"posting_date\" < DATE '2026-01-01'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q09",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT AVG(\"base_grand_total\") AS \"average_invoice_value\"\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND COALESCE(\"is_return\", 0) = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q10",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT SUM(\"outstanding_amount\" * \"conversion_rate\") AS total_outstanding_company_currency\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q11",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS payments_received FROM \"tabPayment Entry\" WHERE docstatus = 1 AND payment_type = 'Receive'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q12",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT SUM(base_received_amount) AS total_received\nFROM \"tabPayment Entry\"\nWHERE docstatus = 1\n  AND payment_type = 'Receive'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q13",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS overdue_invoices\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\n  AND status IN ('Overdue', 'Overdue and Discounted')",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q14",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS fully_paid_invoices\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\n  AND status = 'Paid'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q15",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT status, COUNT(*) AS invoice_count\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\nGROUP BY status\nORDER BY invoice_count DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q16",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS partly_paid_invoices\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\n  AND status IN ('Partly Paid', 'Partly Paid and Discounted')",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q17",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS draft_invoice_count FROM \"tabSales Invoice\" WHERE docstatus = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q18",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT SUM(base_grand_total) AS total_revenue\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\n  AND is_return = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q19",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT currency, COUNT(*) AS invoice_count\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\nGROUP BY currency\nORDER BY invoice_count DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q20",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT currency, SUM(base_grand_total) AS total_revenue_company_currency\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\nGROUP BY currency\nORDER BY total_revenue_company_currency DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q21",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS credit_note_count\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\n  AND is_return = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q22",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT SUM(base_grand_total) AS gross_revenue\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\n  AND is_return = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q23",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT ABS(SUM(base_grand_total)) AS total_returned\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1 AND is_return = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q24",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT territory, SUM(base_grand_total) AS revenue\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1 AND is_return = 0\nGROUP BY territory\nORDER BY revenue DESC\nLIMIT 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q25",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT COALESCE(territory, 'Unknown') AS territory,\n       SUM(base_net_total) AS revenue\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\n  AND COALESCE(is_return, 0) = 0\nGROUP BY 1\nORDER BY revenue DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q26",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT si.\"customer\", si.\"customer_name\", SUM(si.\"base_grand_total\") AS total_invoiced\nFROM \"tabSales Invoice\" si\nWHERE si.\"docstatus\" = 1\n  AND si.\"territory\" = 'Germany'\nGROUP BY si.\"customer\", si.\"customer_name\"\nORDER BY total_invoiced DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q27",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT COUNT(DISTINCT c.\"name\") AS active_customers_with_invoices\nFROM \"tabCustomer\" c\nJOIN \"tabSales Invoice\" si ON si.\"customer\" = c.\"name\" AND si.\"docstatus\" = 1\nWHERE COALESCE(c.\"disabled\", 0) = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q28",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT name, territory_name, is_group FROM \"tabTerritory\" WHERE parent_territory = 'India' ORDER BY name",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q29",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT sii.item_code, SUM(sii.qty) AS total_units\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si ON si.name = sii.parent AND sii.parenttype = 'Sales Invoice'\nWHERE si.docstatus = 1 AND si.is_return = 0\nGROUP BY sii.item_code\nORDER BY total_units DESC\nLIMIT 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q30",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT sii.item_code, SUM(sii.base_net_amount) AS revenue\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si ON si.name = sii.parent AND sii.parenttype = 'Sales Invoice'\nWHERE si.docstatus = 1\nGROUP BY sii.item_code\nORDER BY revenue DESC\nLIMIT 5",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q31",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT COUNT(*) AS line_item_count\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si ON si.\"name\" = sii.\"parent\"\nWHERE sii.\"parenttype\" = 'Sales Invoice'\n  AND si.\"docstatus\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q32",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT AVG(line_count) AS avg_line_items_per_invoice\nFROM (\n  SELECT si.\"name\", COUNT(sii.\"name\") AS line_count\n  FROM \"tabSales Invoice\" si\n  JOIN \"tabSales Invoice Item\" sii\n    ON sii.\"parent\" = si.\"name\" AND sii.\"parenttype\" = 'Sales Invoice'\n  WHERE si.\"docstatus\" = 1\n  GROUP BY si.\"name\"\n) t",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q33",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT sii.item_group, SUM(sii.base_net_amount) AS revenue\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si ON si.name = sii.parent AND sii.parenttype = 'Sales Invoice'\nWHERE si.docstatus = 1\nGROUP BY sii.item_group\nORDER BY revenue DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q34",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT sii.item_group, SUM(sii.base_net_amount) AS total_value\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si ON si.name = sii.parent AND sii.parenttype = 'Sales Invoice'\nJOIN \"tabCustomer\" c ON c.name = si.customer\nWHERE si.docstatus = 1\n  AND c.territory = 'Karnataka'\nGROUP BY sii.item_group\nORDER BY total_value DESC\nLIMIT 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q35",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT customer_name, SUM(base_grand_total) AS revenue\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1 AND is_return = 0\nGROUP BY customer_name\nORDER BY revenue DESC\nLIMIT 3",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q36",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT item_name, standard_rate\nFROM \"tabItem\"\nORDER BY standard_rate DESC\nLIMIT 3",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q37",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT date_trunc('month', posting_date) AS month,\n       SUM(base_grand_total) AS revenue\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\n  AND is_return = 0\n  AND posting_date >= DATE '2026-01-01'\n  AND posting_date < DATE '2027-01-01'\nGROUP BY 1\nORDER BY 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q38",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT SUM(\"base_net_total\") AS net_revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"posting_date\" >= DATE '2026-01-01'\n  AND \"posting_date\" < DATE '2027-01-01'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q39",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT\n  COALESCE(si.territory, '(none)') AS territory,\n  AVG(si.base_grand_total) AS avg_invoice_value,\n  COUNT(*) AS invoice_count\nFROM \"tabSales Invoice\" si\nWHERE si.docstatus = 1\n  AND COALESCE(si.is_return, 0) = 0\nGROUP BY 1\nORDER BY avg_invoice_value DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q40",
+  "ctx": "B_semantic",
+  "model": "default",
+  "sql": "SELECT i.\"item_group\", COUNT(DISTINCT sii.\"item_code\") AS distinct_items_sold\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si ON si.\"name\" = sii.\"parent\" AND sii.\"parenttype\" = 'Sales Invoice'\nJOIN \"tabItem\" i ON i.\"name\" = sii.\"item_code\"\nWHERE si.\"docstatus\" = 1\nGROUP BY i.\"item_group\"\nORDER BY distinct_items_sold DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q01",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) as customer_count\nFROM \"tabCustomer\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q02",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT \"name\" FROM \"tabTerritory\" ORDER BY \"name\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q03",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) as item_count\nFROM \"tabItem\"\nWHERE \"item_group\" = 'Products'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q04",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT MAX(\"standard_rate\") FROM \"tabItem\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q05",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) FROM \"tabSales Invoice\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q06",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT SUM(\"base_grand_total\") as total_sales_revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1 AND \"is_return\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q07",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) FROM \"tabSales Invoice\" WHERE \"docstatus\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q08",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT SUM(\"base_grand_total\") as revenue_2025\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND YEAR(\"posting_date\") = 2025\n  AND \"is_return\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q09",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT AVG(\"base_grand_total\") as average_invoice_value\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1 AND \"is_return\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q10",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT SUM(\"base_outstanding_amount\") as total_outstanding\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1 AND \"base_outstanding_amount\" > 0",
+  "err": null,
+  "status": "error",
+  "detail": "BinderException: Binder Error: Referenced column \"base_outstanding_amount\" not found in FROM clause!\nCandid"
+ },
+ {
+  "qid": "q11",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) as payment_count\nFROM \"tabPayment Entry\"\nWHERE docstatus = 1 AND payment_type = 'Receive'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q12",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT COALESCE(SUM(\"base_received_amount\"), 0) as total_paid_amount\nFROM \"tabPayment Entry\"\nWHERE \"docstatus\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q13",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) as overdue_count\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"status\" = 'Overdue'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q14",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT COUNT(DISTINCT si.\"name\") as fully_paid_invoices_count\nFROM \"tabSales Invoice\" si\nWHERE si.\"docstatus\" = 1\n  AND si.\"outstanding_amount\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q15",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT\n  \"status\",\n  COUNT(*) AS \"invoice_count\"\nFROM\n  \"tabSales Invoice\"\nWHERE\n  \"docstatus\" = 1\nGROUP BY\n  \"status\"\nORDER BY\n  \"invoice_count\" DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q16",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT COUNT(DISTINCT si.\"name\") as partially_paid_invoice_count\nFROM \"tabSales Invoice\" si\nWHERE si.\"docstatus\" = 1\n  AND si.\"outstanding_amount\" > 0\n  AND si.\"base_paid_amount\" > 0",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q17",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) FROM \"tabSales Invoice\" WHERE \"docstatus\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q18",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT SUM(\"base_grand_total\") as total_revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\nAND \"is_return\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q19",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT\n  \"currency\",\n  COUNT(*) as invoice_count\nFROM\n  \"tabSales Invoice\"\nWHERE\n  \"docstatus\" = 1\nGROUP BY\n  \"currency\"\nORDER BY\n  invoice_count DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q20",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT\n  \"currency\",\n  SUM(\"base_grand_total\") AS \"total_revenue_company_currency\"\nFROM\n  \"tabSales Invoice\"\nWHERE\n  \"docstatus\" = 1\nGROUP BY\n  \"currency\"\nORDER BY\n  \"total_revenue_company_currency\" DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q21",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) as credit_notes_and_returns_count\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\nAND (is_return = 1 OR is_debit_note = 1)",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q22",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT SUM(\"base_grand_total\") as gross_revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1 AND \"is_return\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q23",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT ABS(SUM(\"base_grand_total\")) as total_credits\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\nAND \"is_return\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q24",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT\n  \"tabCustomer\".\"territory\",\n  SUM(\"tabSales Invoice\".\"base_grand_total\") as total_revenue\nFROM \"tabSales Invoice\"\nJOIN \"tabCustomer\" ON \"tabSales Invoice\".\"customer\" = \"tabCustomer\".\"name\"\nWHERE \"tabSales Invoice\".\"docstatus\" = 1\n  AND \"tabSales Invoice\".\"is_return\" = 0\nGROUP BY \"tabCustomer\".\"territory\"\nORDER BY total_revenue DESC\nLIMIT 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q25",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT \n  \"tabTerritory\".\"name\" AS territory,\n  SUM(\"tabSales Invoice Item\".\"base_amount\") AS revenue\nFROM \"tabSales Invoice\"\nINNER JOIN \"tabSales Invoice Item\" ON \"tabSales Invoice\".\"name\" = \"tabSales Invoice Item\".\"parent\"\nINNER JOIN \"tabTerritory\" ON \"tabSales Invoice\".\"territory\" = \"tabTerritory\".\"name\"\nWHERE \"tabSales Invoice\".\"docstatus\" = 1\n  AND \"tabSales Invoice\".\"is_return\" = 0\nGROUP BY \"tabTerritory\".\"name\"\nORDER BY revenue DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q26",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT \n    c.\"name\",\n    c.\"customer_name\",\n    SUM(si.\"base_grand_total\") as total_invoiced\nFROM \"tabCustomer\" c\nINNER JOIN \"tabSales Invoice\" si ON c.\"name\" = si.\"customer\"\nWHERE si.\"docstatus\" = 1\n    AND c.\"territory\" IN (SELECT \"name\" FROM \"tabTerritory\" WHERE \"territory_name\" = 'Germany' OR \"parent_territory\" LIKE '%Germany%')\nGROUP BY c.\"name\", c.\"customer_name\"\nORDER BY total_invoiced DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q27",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT COUNT(DISTINCT c.\"name\") as active_customer_count\nFROM \"tabCustomer\" c\nINNER JOIN \"tabSales Invoice\" si ON c.\"name\" = si.\"customer\"\nWHERE c.\"disabled\" = 0\nAND si.\"docstatus\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q28",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT name FROM \"tabTerritory\" WHERE parent_territory = 'India'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q29",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT \n  \"tabSales Invoice Item\".\"item_code\",\n  \"tabItem\".\"item_name\",\n  SUM(\"tabSales Invoice Item\".\"qty\") AS total_qty\nFROM \n  \"tabSales Invoice Item\"\n  INNER JOIN \"tabSales Invoice\" ON \"tabSales Invoice Item\".\"parent\" = \"tabSales Invoice\".\"name\"\n  INNER JOIN \"tabItem\" ON \"tabSales Invoice Item\".\"item_code\" = \"tabItem\".\"name\"\nWHERE \n  \"tabSales Invoice\".\"docstatus\" = 1\n  AND \"tabSales Invoice\".\"is_return\" = 0\nGROUP BY \n  \"tabSales Invoice Item\".\"item_code\",\n  \"tabItem\".\"item_name\"\nORDER BY \n  total_qty DESC\nLIMIT 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q30",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT \n  i.\"name\",\n  i.\"item_name\",\n  SUM(sii.\"base_amount\") as total_revenue\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si ON sii.\"parent\" = si.\"name\"\nJOIN \"tabItem\" i ON sii.\"item_code\" = i.\"name\"\nWHERE si.\"docstatus\" = 1\nGROUP BY i.\"name\", i.\"item_name\"\nORDER BY total_revenue DESC\nLIMIT 5",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q31",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT COUNT(*) FROM \"tabSales Invoice Item\" WHERE \"parent\" IN (SELECT \"name\" FROM \"tabSales Invoice\" WHERE \"docstatus\" = 1)",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q32",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT\n  AVG(item_count) as avg_line_items_per_invoice\nFROM (\n  SELECT\n    parent,\n    COUNT(*) as item_count\n  FROM \"tabSales Invoice Item\"\n  WHERE parenttype = 'Sales Invoice'\n  AND parent IN (\n    SELECT name FROM \"tabSales Invoice\"\n    WHERE docstatus = 1\n  )\n  GROUP BY parent\n) as invoice_items",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q33",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT\n  \"tabItem Group\".\"name\",\n  \"tabItem Group\".\"item_group_name\",\n  SUM(\"tabSales Invoice Item\".\"base_amount\") AS revenue\nFROM \"tabSales Invoice Item\"\nINNER JOIN \"tabItem\" ON \"tabSales Invoice Item\".\"item_code\" = \"tabItem\".\"name\"\nINNER JOIN \"tabItem Group\" ON \"tabItem\".\"item_group\" = \"tabItem Group\".\"name\"\nINNER JOIN \"tabSales Invoice\" ON \"tabSales Invoice Item\".\"parent\" = \"tabSales Invoice\".\"name\"\nWHERE \"tabSales Invoice\".\"docstatus\" = 1\nGROUP BY \"tabItem Group\".\"name\", \"tabItem Group\".\"item_group_name\"\nORDER BY revenue DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q34",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT \n  ig.\"name\" AS item_group,\n  SUM(sii.\"base_amount\") AS total_value\nFROM \"tabSales Invoice\" si\nJOIN \"tabSales Invoice Item\" sii ON si.\"name\" = sii.\"parent\"\nJOIN \"tabItem\" i ON sii.\"item_code\" = i.\"name\"\nJOIN \"tabItem Group\" ig ON i.\"item_group\" = ig.\"name\"\nJOIN \"tabCustomer\" c ON si.\"customer\" = c.\"name\"\nWHERE si.\"docstatus\" = 1\n  AND c.\"territory\" = 'Karnataka'\nGROUP BY ig.\"name\"\nORDER BY total_value DESC\nLIMIT 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q35",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT \n  \"tabCustomer\".\"customer_name\",\n  SUM(\"tabSales Invoice\".\"base_grand_total\") as total_revenue\nFROM \"tabSales Invoice\"\nINNER JOIN \"tabCustomer\" ON \"tabSales Invoice\".\"customer\" = \"tabCustomer\".\"name\"\nWHERE \"tabSales Invoice\".\"docstatus\" = 1\n  AND \"tabSales Invoice\".\"is_return\" = 0\nGROUP BY \"tabCustomer\".\"customer_name\"\nORDER BY total_revenue DESC\nLIMIT 3",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q36",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT \"item_name\", \"standard_rate\"\nFROM \"tabItem\"\nWHERE \"standard_rate\" IS NOT NULL\nORDER BY \"standard_rate\" DESC\nLIMIT 3",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q37",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT\n  DATE_TRUNC('month', \"posting_date\")::DATE AS \"month\",\n  SUM(\"base_grand_total\") AS \"revenue\"\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND YEAR(\"posting_date\") = 2026\n  AND \"is_return\" = 0\nGROUP BY DATE_TRUNC('month', \"posting_date\")\nORDER BY \"month\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q38",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT\n  SUM(\"base_net_total\") as net_revenue\nFROM\n  \"tabSales Invoice\"\nWHERE\n  \"docstatus\" = 1\n  AND YEAR(\"posting_date\") = 2026",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q39",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT\n    \"tabTerritory\".\"name\" AS territory,\n    AVG(\"tabSales Invoice\".\"base_grand_total\") AS avg_invoice_value\nFROM \"tabSales Invoice\"\nINNER JOIN \"tabCustomer\" ON \"tabSales Invoice\".\"customer\" = \"tabCustomer\".\"name\"\nINNER JOIN \"tabTerritory\" ON \"tabCustomer\".\"territory\" = \"tabTerritory\".\"name\"\nWHERE \"tabSales Invoice\".\"docstatus\" = 1\n    AND \"tabSales Invoice\".\"is_return\" = 0\nGROUP BY \"tabTerritory\".\"name\"\nORDER BY avg_invoice_value DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q40",
+  "ctx": "B_semantic",
+  "model": "smol",
+  "sql": "SELECT \n  \"tabItem\".\"item_group\",\n  COUNT(DISTINCT \"tabSales Invoice Item\".\"item_code\") as distinct_items_sold\nFROM \"tabSales Invoice Item\"\nINNER JOIN \"tabSales Invoice\" ON \"tabSales Invoice Item\".\"parent\" = \"tabSales Invoice\".\"name\"\nINNER JOIN \"tabItem\" ON \"tabSales Invoice Item\".\"item_code\" = \"tabItem\".\"name\"\nWHERE \"tabSales Invoice\".\"docstatus\" = 1\nGROUP BY \"tabItem\".\"item_group\"\nORDER BY \"tabItem\".\"item_group\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q01",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS customer_count FROM \"tabCustomer\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q02",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT \"name\" FROM \"tabTerritory\" ORDER BY \"name\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q03",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS item_count\nFROM \"tabItem\"\nWHERE item_group = 'Products'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q04",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT MAX(\"standard_rate\") AS \"highest_standard_rate\" FROM \"tabItem\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q05",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS total_sales_invoices FROM \"tabSales Invoice\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q06",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT SUM(\"base_grand_total\") AS total_sales_revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"is_return\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q07",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS invoice_count\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q08",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT\n  SUM(\"base_net_total\") AS revenue_2025\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"is_return\" = 0\n  AND \"posting_date\" >= DATE '2025-01-01'\n  AND \"posting_date\" < DATE '2026-01-01'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q09",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT AVG(\"base_grand_total\") AS \"average_invoice_value\"\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"is_return\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q10",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT SUM(\"outstanding_amount\" * \"conversion_rate\") AS total_outstanding_company_currency\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q11",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS payments_received\nFROM \"tabPayment Entry\"\nWHERE docstatus = 1\n  AND payment_type = 'Receive'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q12",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT SUM(\"base_received_amount\") AS \"total_received\"\nFROM \"tabPayment Entry\"\nWHERE \"docstatus\" = 1\n  AND \"payment_type\" = 'Receive'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q13",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS overdue_invoice_count\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\n  AND status IN ('Overdue', 'Overdue and Discounted')",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q14",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS fully_paid_invoices\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\n  AND status = 'Paid'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q15",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT \"status\", COUNT(*) AS invoice_count\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\nGROUP BY \"status\"\nORDER BY invoice_count DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q16",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS partially_paid_invoices\nFROM \"tabSales Invoice\"\nWHERE docstatus = 1\n  AND status IN ('Partly Paid', 'Partly Paid and Discounted')",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q17",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS draft_invoice_count\nFROM \"tabSales Invoice\"\nWHERE docstatus = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q18",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT SUM(\"base_grand_total\") AS total_revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND COALESCE(\"is_return\", 0) = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q19",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT\n  \"currency\",\n  COUNT(*) AS \"invoice_count\"\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\nGROUP BY \"currency\"\nORDER BY \"invoice_count\" DESC, \"currency\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q20",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT\n    \"currency\"                        AS transaction_currency,\n    COUNT(*)                          AS invoice_count,\n    SUM(\"base_grand_total\")           AS total_revenue_company_currency\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\nGROUP BY \"currency\"\nORDER BY total_revenue_company_currency DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q21",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT\n  COUNT(*) AS total_issued_invoices,\n  COUNT(*) FILTER (WHERE \"is_return\" = 1 OR \"status\" IN ('Return', 'Credit Note Issued')) AS credit_notes_or_returns,\n  ROUND(\n    100.0 * COUNT(*) FILTER (WHERE \"is_return\" = 1 OR \"status\" IN ('Return', 'Credit Note Issued'))\n    / NULLIF(COUNT(*), 0), 2\n  ) AS pct_of_issued_invoices\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q22",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT SUM(\"base_grand_total\") AS gross_revenue\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"is_return\" = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q23",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT -SUM(\"base_grand_total\") AS total_credited_back\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"is_return\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q24",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT\n    COALESCE(si.\"territory\", c.\"territory\", 'Unknown') AS \"territory\",\n    SUM(si.\"base_grand_total\") AS \"total_revenue\",\n    COUNT(*) AS \"invoice_count\"\nFROM \"tabSales Invoice\" si\nLEFT JOIN \"tabCustomer\" c\n    ON c.\"name\" = si.\"customer\"\nWHERE si.\"docstatus\" = 1\n  AND COALESCE(si.\"is_return\", 0) = 0\nGROUP BY 1\nORDER BY \"total_revenue\" DESC\nLIMIT 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q25",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT\n  COALESCE(\"territory\", 'Unassigned') AS \"territory\",\n  SUM(\"base_net_total\") AS \"revenue\",\n  COUNT(*) AS \"invoice_count\"\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND COALESCE(\"is_return\", 0) = 0\nGROUP BY COALESCE(\"territory\", 'Unassigned')\nORDER BY \"revenue\" DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q26",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT\n    c.\"name\" AS customer_id,\n    c.customer_name,\n    c.territory,\n    COUNT(DISTINCT si.\"name\") AS invoice_count,\n    SUM(si.base_grand_total) AS total_invoiced_company_currency\nFROM \"tabSales Invoice\" si\nJOIN \"tabCustomer\" c\n    ON c.\"name\" = si.customer\nWHERE si.docstatus = 1\n  AND c.territory = 'Germany'\nGROUP BY c.\"name\", c.customer_name, c.territory\nORDER BY total_invoiced_company_currency DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q27",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT COUNT(DISTINCT c.\"name\") AS active_customers_with_invoices\nFROM \"tabCustomer\" c\nJOIN \"tabSales Invoice\" si\n  ON si.\"customer\" = c.\"name\"\n AND si.\"docstatus\" = 1\nWHERE COALESCE(c.\"disabled\", 0) = 0",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q28",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT \"name\", \"territory_name\", \"is_group\", \"territory_manager\"\nFROM \"tabTerritory\"\nWHERE \"parent_territory\" = 'India'\nORDER BY \"territory_name\"",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q29",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT\n  sii.\"item_code\",\n  ANY_VALUE(sii.\"item_name\") AS \"item_name\",\n  SUM(sii.\"qty\") AS \"total_units\"\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si\n  ON si.\"name\" = sii.\"parent\"\n AND sii.\"parenttype\" = 'Sales Invoice'\nWHERE si.\"docstatus\" = 1\n  AND COALESCE(si.\"is_return\", 0) = 0\nGROUP BY sii.\"item_code\"\nORDER BY \"total_units\" DESC\nLIMIT 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q30",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT\n    sii.item_code,\n    ANY_VALUE(sii.item_name) AS item_name,\n    SUM(sii.base_net_amount) AS revenue\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si\n    ON si.name = sii.parent\n   AND sii.parenttype = 'Sales Invoice'\nWHERE si.docstatus = 1\n  AND COALESCE(si.is_return, 0) = 0\nGROUP BY sii.item_code\nORDER BY revenue DESC\nLIMIT 5",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "gold col 0 unmatched"
+ },
+ {
+  "qid": "q31",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT COUNT(*) AS invoice_line_items\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si\n  ON si.\"name\" = sii.\"parent\"\n AND sii.\"parenttype\" = 'Sales Invoice'\nWHERE si.\"docstatus\" = 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q32",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT AVG(item_count) AS avg_line_items_per_invoice\nFROM (\n    SELECT si.\"name\" AS invoice, COUNT(sii.\"name\") AS item_count\n    FROM \"tabSales Invoice\" si\n    JOIN \"tabSales Invoice Item\" sii\n      ON sii.\"parent\" = si.\"name\"\n     AND sii.\"parenttype\" = 'Sales Invoice'\n    WHERE si.\"docstatus\" = 1\n    GROUP BY si.\"name\"\n) t",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q33",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT\n    COALESCE(sii.\"item_group\", i.\"item_group\", 'Unknown') AS \"item_group\",\n    SUM(sii.\"base_net_amount\") AS \"revenue\"\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si\n    ON si.\"name\" = sii.\"parent\"\n   AND sii.\"parenttype\" = 'Sales Invoice'\nLEFT JOIN \"tabItem\" i\n    ON i.\"name\" = sii.\"item_code\"\nWHERE si.\"docstatus\" = 1\nGROUP BY 1\nORDER BY \"revenue\" DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q34",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT\n    COALESCE(sii.item_group, i.item_group) AS item_group,\n    SUM(sii.base_net_amount) AS total_value,\n    SUM(sii.stock_qty) AS total_qty\nFROM \"tabSales Invoice Item\" sii\nJOIN \"tabSales Invoice\" si\n    ON si.name = sii.parent\n   AND sii.parenttype = 'Sales Invoice'\nJOIN \"tabCustomer\" c\n    ON c.name = si.customer\nLEFT JOIN \"tabItem\" i\n    ON i.name = sii.item_code\nJOIN \"tabTerritory\" t\n    ON t.name = c.territory\nJOIN \"tabTerritory\" root\n    ON root.name = 'Karnataka'\n   AND t.lft >= root.lft\n   AND t.rgt <= root.rgt\nWHERE si.docstatus = 1\nGROUP BY 1\nORDER BY total_value DESC\nLIMIT 1",
+  "err": null,
+  "status": "wrong_values",
+  "detail": "0 rows vs 1 gold"
+ },
+ {
+  "qid": "q35",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT\n  si.\"customer\",\n  MAX(si.\"customer_name\") AS \"customer_name\",\n  SUM(si.\"base_grand_total\") AS \"revenue\"\nFROM \"tabSales Invoice\" si\nWHERE si.\"docstatus\" = 1\n  AND COALESCE(si.\"is_return\", 0) = 0\nGROUP BY si.\"customer\"\nORDER BY \"revenue\" DESC\nLIMIT 3",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q36",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT \"item_name\", \"standard_rate\"\nFROM \"tabItem\"\nORDER BY \"standard_rate\" DESC\nLIMIT 3",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q37",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT\n  date_trunc('month', \"posting_date\") AS \"month\",\n  SUM(\"base_grand_total\") AS \"revenue\",\n  COUNT(*) AS \"invoice_count\"\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"is_return\" = 0\n  AND \"posting_date\" >= DATE '2026-01-01'\n  AND \"posting_date\" < DATE '2027-01-01'\nGROUP BY 1\nORDER BY 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q38",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT\n    SUM(\"base_net_total\") AS net_revenue_2026\nFROM \"tabSales Invoice\"\nWHERE \"docstatus\" = 1\n  AND \"posting_date\" >= DATE '2026-01-01'\n  AND \"posting_date\" <  DATE '2027-01-01'",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q39",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT\n  si.\"territory\",\n  AVG(si.\"base_grand_total\") AS \"avg_invoice_value\",\n  COUNT(*) AS \"invoice_count\"\nFROM \"tabSales Invoice\" si\nWHERE si.\"docstatus\" = 1\n  AND si.\"is_return\" = 0\nGROUP BY si.\"territory\"\nORDER BY \"avg_invoice_value\" DESC",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ },
+ {
+  "qid": "q40",
+  "ctx": "B_semantic",
+  "model": "slow",
+  "sql": "SELECT\n    COALESCE(it.\"item_group\", sii.\"item_group\") AS \"item_group\",\n    COUNT(DISTINCT sii.\"item_code\") AS \"distinct_items_sold\"\nFROM \"tabSales Invoice Item\" AS sii\nJOIN \"tabSales Invoice\" AS si\n    ON si.\"name\" = sii.\"parent\"\n   AND sii.\"parenttype\" = 'Sales Invoice'\nLEFT JOIN \"tabItem\" AS it\n    ON it.\"name\" = sii.\"item_code\"\nWHERE si.\"docstatus\" = 1\nGROUP BY 1\nORDER BY \"distinct_items_sold\" DESC, 1",
+  "err": null,
+  "status": "pass",
+  "detail": ""
+ }
+]

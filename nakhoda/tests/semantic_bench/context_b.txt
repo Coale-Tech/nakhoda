@@ -1,0 +1,476 @@
+-- Database: DuckDB. Use double quotes for identifiers.
+-- Semantic model auto-derived from Frappe DocType metadata (frappe.get_meta).
+
+## Framework conventions (apply to every table)
+- Each table `tab<DocType>` stores one DocType. Column `name` is the primary key.
+- Tables flagged SUBMITTABLE below use `docstatus`: 0 = Draft, 1 = Submitted, 2 = Cancelled.
+  Only docstatus = 1 rows are real business transactions. Drafts and cancelled rows
+  must be excluded from any business figure unless explicitly asked for.
+- There are NO database foreign keys. Relationships are declared as Link columns;
+  a Link column holds the `name` primary key of the table it targets.
+- CHILD tables hold row-level detail. They join to their parent through
+  `parent` = parent table's `name`, filtered by `parenttype`.
+- Columns prefixed `base_` are the same figure converted to company currency using
+  `conversion_rate`. Non-prefixed money columns are in the transaction `currency`.
+  Aggregating money across rows requires the `base_` column.
+
+### "tabCustomer"  -- Customer
+-- Buyer of Goods and Services.
+  name  VARCHAR  -- primary key
+  naming_series  VARCHAR  -- Series; one of: CUST-.YYYY.-
+  customer_name  VARCHAR  -- required
+  alias  VARCHAR
+  gender  VARCHAR  -- -> "tabGender".name
+  customer_type  VARCHAR  -- one of: Company | Individual | Partnership; required
+  default_bank_account  VARCHAR  -- Company Bank Account; -> "tabBank Account".name; Pre-filled on payment entries for this customer. Must be a company account.
+  lead_name  VARCHAR  -- Lead; -> "tabLead".name
+  image  VARCHAR
+  account_manager  VARCHAR  -- -> "tabUser".name
+  customer_group  VARCHAR  -- -> "tabCustomer Group".name
+  territory  VARCHAR  -- -> "tabTerritory".name
+  tax_id  VARCHAR
+  tax_category  VARCHAR  -- -> "tabTax Category".name; Controls which tax template is auto-applied when this customer is selected on a transaction.
+  disabled  TINYINT  -- boolean 0/1; Blocks this customer from being used on any new transaction.
+  is_internal_customer  TINYINT  -- boolean 0/1; Mark if this customer represents an internal company. Enables inter-company transactions.
+  represents_company  VARCHAR  -- -> "tabCompany".name
+  default_currency  VARCHAR  -- Billing Currency; -> "tabCurrency".name; All invoices and orders for this customer will be created in this currency.
+  default_price_list  VARCHAR  -- Price List; -> "tabPrice List".name; Fetched automatically on sales orders and invoices for this customer.
+  language  VARCHAR  -- Print Language; -> "tabLanguage".name
+  website  VARCHAR
+  customer_primary_contact  VARCHAR  -- -> "tabContact".name; Reselect, if the chosen contact is edited after save
+  mobile_no  VARCHAR
+  email_id  VARCHAR
+  customer_primary_address  VARCHAR  -- -> "tabAddress".name; Reselect, if the chosen address is edited after save
+  primary_address  VARCHAR
+  payment_terms  VARCHAR  -- Payment Terms Template; -> "tabPayment Terms Template".name; Defines when payment is due (e.g. Net 30, 50% advance). Applied automatically on invoices for this customer.
+  customer_details  VARCHAR  -- Internal notes about this customer. Not visible on transactions or the portal.
+  market_segment  VARCHAR  -- -> "tabMarket Segment".name; Classify the type of market this customer belongs to, used for sales analysis and targeting.
+  industry  VARCHAR  -- -> "tabIndustry Type".name
+  is_frozen  TINYINT  -- boolean 0/1; Blocks all further accounting entries on this customer's account. Only users with the frozen-entries role can 
+  loyalty_program  VARCHAR  -- -> "tabLoyalty Program".name; Loyalty scheme this customer earns points under. Auto-assigned if a matching program exists.
+  loyalty_program_tier  VARCHAR  -- Current tier based on accumulated points. Updated automatically on each invoice.
+  default_sales_partner  VARCHAR  -- Sales Partner; -> "tabSales Partner".name
+  default_commission_rate  DOUBLE  -- Commission Rate
+  customer_pos_id  VARCHAR
+  so_required  TINYINT  -- Allow sales invoice creation without sales order; boolean 0/1
+  dn_required  TINYINT  -- Allow sales invoice creation without delivery note; boolean 0/1
+  tax_withholding_category  VARCHAR  -- -> "tabTax Withholding Category".name; TDS/TCS is calculated at the rate defined here on every payment from this customer.
+  opportunity_name  VARCHAR  -- Opportunity; -> "tabOpportunity".name
+  prospect_name  VARCHAR  -- Prospect; -> "tabProspect".name
+  first_name  VARCHAR
+  last_name  VARCHAR
+  tax_withholding_group  VARCHAR  -- -> "tabTax Withholding Group".name; Select the group first to filter the applicable withholding categories below.
+
+### "tabSales Invoice"  -- Sales Invoice  [SUBMITTABLE]
+  name  VARCHAR  -- primary key
+  docstatus  TINYINT  -- 0=Draft 1=Submitted 2=Cancelled
+  naming_series  VARCHAR  -- Series; one of: ACC-SINV-.YYYY.- | ACC-SINV-RET-.YYYY.-; required
+  customer  VARCHAR  -- -> "tabCustomer".name; required
+  customer_name  VARCHAR
+  tax_id  VARCHAR
+  project  VARCHAR  -- -> "tabProject".name
+  is_pos  TINYINT  -- Include Payment (POS); boolean 0/1
+  pos_profile  VARCHAR  -- -> "tabPOS Profile".name
+  is_return  TINYINT  -- Is Return (Credit Note); boolean 0/1
+  company  VARCHAR  -- -> "tabCompany".name; required
+  cost_center  VARCHAR  -- -> "tabCost Center".name
+  posting_date  DATE  -- required
+  posting_time  TIME
+  set_posting_time  TINYINT  -- Edit Posting Date and Time; boolean 0/1
+  due_date  DATE  -- Payment Due Date
+  amended_from  VARCHAR  -- -> "tabSales Invoice".name
+  return_against  VARCHAR  -- -> "tabSales Invoice".name
+  update_billed_amount_in_sales_order  TINYINT  -- boolean 0/1
+  po_no  VARCHAR  -- Customer's Purchase Order
+  po_date  DATE  -- Customer's Purchase Order Date
+  customer_address  VARCHAR  -- -> "tabAddress".name
+  address_display  VARCHAR  -- Address
+  contact_person  VARCHAR  -- -> "tabContact".name
+  contact_display  VARCHAR  -- Contact
+  contact_mobile  VARCHAR  -- Mobile No
+  contact_email  VARCHAR
+  territory  VARCHAR  -- -> "tabTerritory".name
+  shipping_address_name  VARCHAR  -- -> "tabAddress".name
+  shipping_address  VARCHAR
+  company_address  VARCHAR  -- Company Address Name; -> "tabAddress".name
+  company_address_display  VARCHAR  -- Company Address
+  currency  VARCHAR  -- -> "tabCurrency".name; required
+  conversion_rate  DOUBLE  -- Exchange Rate; Rate at which Customer Currency is converted to customer's base currency; required
+  selling_price_list  VARCHAR  -- Price List; -> "tabPrice List".name; required
+  price_list_currency  VARCHAR  -- -> "tabCurrency".name; required
+  plc_conversion_rate  DOUBLE  -- Price List Exchange Rate; Rate at which Price list currency is converted to customer's base currency; required
+  ignore_pricing_rule  TINYINT  -- boolean 0/1
+  set_warehouse  VARCHAR  -- Source Warehouse; -> "tabWarehouse".name
+  update_stock  TINYINT  -- boolean 0/1; If checked, updates inventory; stock and accounting entries are created together. Leave unchecked if a Deliver
+  scan_barcode  VARCHAR
+  total_billing_amount  DECIMAL(18,6)
+  total_qty  DOUBLE  -- Total Quantity
+  base_total  DECIMAL(18,6)  -- Total (Company Currency)
+  base_net_total  DECIMAL(18,6)  -- Net Total (Company Currency); required
+  total  DECIMAL(18,6)
+  net_total  DECIMAL(18,6)
+  total_net_weight  DOUBLE
+  taxes_and_charges  VARCHAR  -- Sales Taxes and Charges Template; -> "tabSales Taxes and Charges Template".name
+  shipping_rule  VARCHAR  -- -> "tabShipping Rule".name
+  tax_category  VARCHAR  -- -> "tabTax Category".name
+  other_charges_calculation  VARCHAR  -- Taxes and Charges Calculation
+  base_total_taxes_and_charges  DECIMAL(18,6)  -- Total Taxes and Charges (Company Currency)
+  total_taxes_and_charges  DECIMAL(18,6)
+  loyalty_points  BIGINT
+  loyalty_amount  DECIMAL(18,6)
+  redeem_loyalty_points  TINYINT  -- boolean 0/1
+  loyalty_program  VARCHAR  -- -> "tabLoyalty Program".name
+  loyalty_redemption_account  VARCHAR  -- Redemption Account; -> "tabAccount".name
+  loyalty_redemption_cost_center  VARCHAR  -- Redemption Cost Center; -> "tabCost Center".name
+  apply_discount_on  VARCHAR  -- Apply Additional Discount On; one of: Grand Total | Net Total
+  base_discount_amount  DECIMAL(18,6)  -- Additional Discount Amount (Company Currency)
+  additional_discount_percentage  DOUBLE
+  discount_amount  DECIMAL(18,6)  -- Additional Discount Amount
+  base_grand_total  DECIMAL(18,6)  -- Grand Total (Company Currency; required
+  base_rounding_adjustment  DECIMAL(18,6)  -- Rounding Adjustment
+  base_rounded_total  DECIMAL(18,6)  -- Rounded Total
+  base_in_words  VARCHAR  -- In Words; In Words will be visible once you save the Sales Invoice.
+  grand_total  DECIMAL(18,6)  -- required
+  rounding_adjustment  DECIMAL(18,6)
+  rounded_total  DECIMAL(18,6)
+  in_words  VARCHAR
+  total_advance  DECIMAL(18,6)
+  outstanding_amount  DECIMAL(18,6)
+  allocate_advances_automatically  TINYINT  -- Allocate Advances Automatically (FIFO); boolean 0/1
+  payment_terms_template  VARCHAR  -- -> "tabPayment Terms Template".name
+  cash_bank_account  VARCHAR  -- Cash/Bank Account; -> "tabAccount".name
+  base_paid_amount  DECIMAL(18,6)  -- Paid Amount (Company Currency)
+  paid_amount  DECIMAL(18,6)
+  base_change_amount  DECIMAL(18,6)  -- Base Change Amount (Company Currency)
+  change_amount  DECIMAL(18,6)
+  account_for_change_amount  VARCHAR  -- -> "tabAccount".name
+  write_off_amount  DECIMAL(18,6)
+  base_write_off_amount  DECIMAL(18,6)  -- Write Off Amount (Company Currency)
+  write_off_outstanding_amount_automatically  TINYINT  -- Write Off Outstanding Amount; boolean 0/1
+  write_off_account  VARCHAR  -- -> "tabAccount".name
+  write_off_cost_center  VARCHAR  -- -> "tabCost Center".name
+  tc_name  VARCHAR  -- Terms; -> "tabTerms and Conditions".name
+  terms  VARCHAR  -- Terms and Conditions Details
+  letter_head  VARCHAR  -- -> "tabLetter Head".name
+  group_same_items  TINYINT  -- boolean 0/1
+  language  VARCHAR  -- Print Language; -> "tabLanguage".name
+  select_print_heading  VARCHAR  -- Print Heading; -> "tabPrint Heading".name
+  inter_company_invoice_reference  VARCHAR  -- -> "tabPurchase Invoice".name
+  customer_group  VARCHAR  -- -> "tabCustomer Group".name
+  is_discounted  TINYINT  -- boolean 0/1
+  status  VARCHAR  -- one of: Draft | Return | Credit Note Issued | Submitted | Paid | Partly Paid | Unpaid | Unpaid and Discounted | Partly Paid and Discounted | Overdue and Discounted | Overdue | Cancelled | Internal Transfer
+  debit_to  VARCHAR  -- -> "tabAccount".name; required
+  party_account_currency  VARCHAR  -- -> "tabCurrency".name
+  is_opening  VARCHAR  -- Is Opening Entry; one of: No | Yes
+  remarks  VARCHAR
+  sales_partner  VARCHAR  -- -> "tabSales Partner".name
+  commission_rate  DOUBLE  -- Commission Rate (%)
+  total_commission  DECIMAL(18,6)
+  from_date  DATE
+  to_date  DATE
+  auto_repeat  VARCHAR  -- -> "tabAuto Repeat".name
+  against_income_account  VARCHAR
+  is_consolidated  TINYINT  -- boolean 0/1
+  is_internal_customer  TINYINT  -- boolean 0/1
+  company_tax_id  VARCHAR
+  unrealized_profit_loss_account  VARCHAR  -- Unrealized Profit / Loss Account; -> "tabAccount".name; Unrealized Profit / Loss account for intra-company transfers
+  represents_company  VARCHAR  -- -> "tabCompany".name; Company which internal customer represents
+  set_target_warehouse  VARCHAR  -- -> "tabWarehouse".name
+  is_debit_note  TINYINT  -- Is Rate Adjustment Entry (Debit Note); boolean 0/1; Issue a debit note against an existing Sales Invoice to adjust the rate. The quantity will be retained from th
+  disable_rounded_total  TINYINT  -- boolean 0/1
+  additional_discount_account  VARCHAR  -- Discount Account; -> "tabAccount".name
+  dispatch_address_name  VARCHAR  -- -> "tabAddress".name
+  dispatch_address  VARCHAR
+  ignore_default_payment_terms_template  TINYINT  -- boolean 0/1
+  total_billing_hours  DOUBLE
+  amount_eligible_for_commission  DECIMAL(18,6)
+  subscription  VARCHAR  -- -> "tabSubscription".name
+  is_cash_or_non_trade_discount  TINYINT  -- boolean 0/1
+  incoterm  VARCHAR  -- -> "tabIncoterm".name
+  named_place  VARCHAR
+  only_include_allocated_payments  TINYINT  -- boolean 0/1; Advance payments allocated against orders will only be fetched
+  use_company_roundoff_cost_center  TINYINT  -- Use Company default Cost Center for Round off; boolean 0/1
+  update_billed_amount_in_delivery_note  TINYINT  -- boolean 0/1
+  dont_create_loyalty_points  TINYINT  -- Don't Create Loyalty Points; boolean 0/1
+  coupon_code  VARCHAR  -- -> "tabCoupon Code".name
+  update_outstanding_for_self  TINYINT  -- boolean 0/1; Credit Note will update it's own outstanding amount, even if 'Return Against' is specified.
+  utm_medium  VARCHAR  -- Medium; -> "tabUTM Medium".name
+  utm_content  VARCHAR  -- Content
+  utm_campaign  VARCHAR  -- Campaign; -> "tabUTM Campaign".name
+  utm_source  VARCHAR  -- Source; -> "tabUTM Source".name
+  company_contact_person  VARCHAR  -- -> "tabContact".name
+  is_created_using_pos  TINYINT  -- boolean 0/1
+  pos_closing_entry  VARCHAR  -- -> "tabPOS Closing Entry".name
+  last_scanned_warehouse  VARCHAR
+  has_subcontracted  TINYINT  -- boolean 0/1
+  apply_tds  TINYINT  -- Consider for Tax Withholding; boolean 0/1
+  tax_withholding_group  VARCHAR  -- -> "tabTax Withholding Group".name
+  ignore_tax_withholding_threshold  TINYINT  -- boolean 0/1
+  override_tax_withholding_entries  TINYINT  -- Edit Tax Withholding Entries; boolean 0/1
+  title  VARCHAR
+
+### "tabSales Invoice Item"  -- Sales Invoice Item  [CHILD]
+  name  VARCHAR  -- primary key
+  parent  VARCHAR  -- FK to parent document name
+  parenttype  VARCHAR  -- parent DocType name
+  barcode  VARCHAR
+  item_code  VARCHAR  -- Item; -> "tabItem".name
+  item_name  VARCHAR  -- required
+  customer_item_code  VARCHAR  -- Customer's Item Code
+  description  VARCHAR
+  image_view  VARCHAR
+  image  VARCHAR
+  qty  DOUBLE  -- Quantity
+  stock_uom  VARCHAR  -- -> "tabUOM".name
+  uom  VARCHAR  -- -> "tabUOM".name; required
+  conversion_factor  DOUBLE  -- UOM Conversion Factor; required
+  stock_qty  DOUBLE  -- Qty as per Stock UOM
+  price_list_rate  DECIMAL(18,6)
+  base_price_list_rate  DECIMAL(18,6)  -- Price List Rate (Company Currency)
+  margin_type  VARCHAR  -- one of: Percentage | Amount
+  margin_rate_or_amount  DOUBLE
+  rate_with_margin  DECIMAL(18,6)
+  discount_percentage  DOUBLE  -- Discount (%) on Price List Rate with Margin
+  discount_amount  DECIMAL(18,6)
+  base_rate_with_margin  DECIMAL(18,6)  -- Rate With Margin (Company Currency)
+  rate  DECIMAL(18,6)  -- required
+  amount  DECIMAL(18,6)  -- required
+  base_rate  DECIMAL(18,6)  -- Rate (Company Currency); required
+  base_amount  DECIMAL(18,6)  -- Amount (Company Currency); required
+  pricing_rules  VARCHAR
+  is_free_item  TINYINT  -- boolean 0/1
+  net_rate  DECIMAL(18,6)
+  net_amount  DECIMAL(18,6)
+  base_net_rate  DECIMAL(18,6)  -- Net Rate (Company Currency)
+  base_net_amount  DECIMAL(18,6)  -- Net Amount (Company Currency)
+  delivered_by_supplier  TINYINT  -- boolean 0/1
+  income_account  VARCHAR  -- -> "tabAccount".name; required
+  expense_account  VARCHAR  -- -> "tabAccount".name
+  item_tax_template  VARCHAR  -- -> "tabItem Tax Template".name
+  cost_center  VARCHAR  -- -> "tabCost Center".name; required
+  deferred_revenue_account  VARCHAR  -- -> "tabAccount".name
+  service_stop_date  DATE
+  enable_deferred_revenue  TINYINT  -- boolean 0/1
+  service_start_date  DATE
+  service_end_date  DATE
+  weight_per_unit  DOUBLE
+  total_weight  DOUBLE
+  weight_uom  VARCHAR  -- -> "tabUOM".name
+  warehouse  VARCHAR  -- -> "tabWarehouse".name
+  target_warehouse  VARCHAR  -- -> "tabWarehouse".name
+  quality_inspection  VARCHAR  -- -> "tabQuality Inspection".name
+  batch_no  VARCHAR  -- -> "tabBatch".name
+  allow_zero_valuation_rate  TINYINT  -- boolean 0/1
+  serial_no  VARCHAR
+  item_group  VARCHAR  -- -> "tabItem Group".name
+  brand  VARCHAR  -- Brand Name
+  item_tax_rate  VARCHAR
+  actual_batch_qty  DOUBLE  -- Available Batch Qty at Warehouse
+  actual_qty  DOUBLE  -- Qty (Warehouse)
+  sales_order  VARCHAR  -- -> "tabSales Order".name
+  so_detail  VARCHAR  -- Sales Order Item
+  delivery_note  VARCHAR  -- -> "tabDelivery Note".name
+  dn_detail  VARCHAR  -- Delivery Note Item
+  delivered_qty  DOUBLE
+  is_fixed_asset  TINYINT  -- boolean 0/1
+  asset  VARCHAR  -- -> "tabAsset".name
+  page_break  TINYINT  -- boolean 0/1
+  finance_book  VARCHAR  -- -> "tabFinance Book".name
+  project  VARCHAR  -- -> "tabProject".name
+  sales_invoice_item  VARCHAR
+  incoming_rate  DECIMAL(18,6)  -- Incoming Rate (Costing)
+  stock_uom_rate  DECIMAL(18,6)  -- Rate of Stock UOM
+  discount_account  VARCHAR  -- -> "tabAccount".name
+  grant_commission  TINYINT  -- boolean 0/1
+  purchase_order  VARCHAR  -- -> "tabPurchase Order".name
+  purchase_order_item  VARCHAR
+  has_item_scanned  TINYINT  -- boolean 0/1
+  serial_and_batch_bundle  VARCHAR  -- -> "tabSerial and Batch Bundle".name
+  use_serial_batch_fields  TINYINT  -- Use Serial No / Batch Fields; boolean 0/1
+  distributed_discount_amount  DECIMAL(18,6)
+  company_total_stock  DOUBLE  -- Qty (Company)
+  pos_invoice_item  VARCHAR
+  pos_invoice  VARCHAR  -- -> "tabPOS Invoice".name
+  scio_detail  VARCHAR
+  tax_withholding_category  VARCHAR  -- -> "tabTax Withholding Category".name
+  apply_tds  TINYINT  -- Consider for Tax Withholding; boolean 0/1
+  against_pick_list  VARCHAR  -- -> "tabPick List".name
+  pick_list_item  VARCHAR
+
+### "tabItem"  -- Item
+-- A Product or a Service that is bought, sold or kept in stock.
+  name  VARCHAR  -- primary key
+  naming_series  VARCHAR  -- Series; one of: STO-ITEM-.YYYY.-
+  item_code  VARCHAR  -- required
+  variant_of  VARCHAR  -- -> "tabItem".name; If item is a variant of another item then description, image, pricing, taxes etc will be set from the template
+  item_name  VARCHAR
+  item_group  VARCHAR  -- -> "tabItem Group".name; required
+  stock_uom  VARCHAR  -- Default Unit of Measure; -> "tabUOM".name; required
+  disabled  TINYINT  -- boolean 0/1; Disabled items cannot be selected in any transaction.
+  allow_alternative_item  TINYINT  -- boolean 0/1; Allow substituting this item with an alternative from the Item Alternative list when stock is unavailable.
+  is_stock_item  TINYINT  -- Maintain Stock; boolean 0/1; ERPNext will make a stock ledger entry for each transaction of this item. Keep unchecked for non-stock or serv
+  include_item_in_manufacturing  TINYINT  -- boolean 0/1; Enable for raw material items used in BOM. Uncheck for additional services like 'washing' used in manufacturin
+  opening_stock  DOUBLE  -- Used to create an opening Stock Entry with the Valuation Rate when the item is saved
+  valuation_rate  DECIMAL(18,6)
+  standard_rate  DECIMAL(18,6)  -- Standard Selling Rate; Creates an Item Price automatically when the item is saved
+  is_fixed_asset  TINYINT  -- boolean 0/1; Enable if this item is a company asset like machinery or furniture.
+  asset_category  VARCHAR  -- -> "tabAsset Category".name
+  asset_naming_series  VARCHAR
+  image  VARCHAR
+  brand  VARCHAR  -- -> "tabBrand".name
+  description  VARCHAR
+  shelf_life_in_days  BIGINT
+  end_of_life  DATE  -- Defines the date after which the item can no longer be used in transactions or manufacturing
+  default_material_request_type  VARCHAR  -- one of: Purchase | Material Transfer | Material Issue | Manufacture | Customer Provided
+  valuation_method  VARCHAR  -- one of: FIFO | Moving Average | LIFO
+  warranty_period  VARCHAR  -- Warranty Period (in days)
+  weight_per_unit  DOUBLE
+  weight_uom  VARCHAR  -- -> "tabUOM".name
+  has_batch_no  TINYINT  -- boolean 0/1; Track this item in batches. Cannot be changed after a stock transaction exists.
+  create_new_batch  TINYINT  -- Automatically Create New Batch; boolean 0/1; Batch number will be auto-created in format AAAA.00001 if not specified in transactions. Leave blank to always
+  batch_number_series  VARCHAR  -- Example: ABCD.#####. If series is set and Batch No is not mentioned in transactions, then automatic batch numb
+  has_expiry_date  TINYINT  -- boolean 0/1; Batch number will be created based on expiry date. Expiry dates can be set in the Batch master.
+  retain_sample  TINYINT  -- boolean 0/1; Enable to reserve a small sample from each batch for any analysis arising ahead
+  sample_quantity  BIGINT  -- Max Sample Quantity; Maximum sample quantity that can be retained
+  has_serial_no  TINYINT  -- boolean 0/1; Track each unit with a unique serial number for warranty and return tracking. Cannot be changed after a stock 
+  serial_no_series  VARCHAR  -- Serial Number Series; Example: ABCD.##### If series is set and Serial No is not mentioned in transactions, then automatic serial num
+  has_variants  TINYINT  -- boolean 0/1; If this item has variants, then it cannot be selected in sales orders etc.
+  variant_based_on  VARCHAR  -- one of: Item Attribute | Manufacturer
+  is_purchase_item  TINYINT  -- Allow Purchase; boolean 0/1; Allow this item to be used in purchase transactions.
+  purchase_uom  VARCHAR  -- Default Purchase Unit of Measure; -> "tabUOM".name
+  min_order_qty  DOUBLE  -- Minimum Order Qty; Minimum quantity should be as per Stock UOM
+  safety_stock  DOUBLE  -- Minimum stock level to maintain as a buffer. Used to calculate recommended reorder level: Reorder Level = Safe
+  lead_time_days  BIGINT  -- Lead Time in days; Average time taken by the supplier to deliver
+  last_purchase_rate  DOUBLE  -- The rate at which this item was last purchased via a Purchase Invoice. Auto-updated by the system.
+  is_customer_provided_item  TINYINT  -- boolean 0/1; Enable if this item is provided by a customer and received via Stock Entry.
+  delivered_by_supplier  TINYINT  -- Delivered by Supplier (Drop Ship); boolean 0/1; Enable for drop shipping - supplier delivers directly to the customer without passing through your warehouse.
+  country_of_origin  VARCHAR  -- -> "tabCountry".name
+  customs_tariff_number  VARCHAR  -- -> "tabCustoms Tariff Number".name
+  sales_uom  VARCHAR  -- Default Sales Unit of Measure; -> "tabUOM".name
+  is_sales_item  TINYINT  -- Allow Sales; boolean 0/1; Allow this item to be used in sales transactions.
+  max_discount  DOUBLE  -- Max Discount (%); Maximum discount % allowed when selling this item. Eg: if set to 20%, a discount greater than 20% cannot be ap
+  enable_deferred_revenue  TINYINT  -- boolean 0/1; Expense for this item will be recognized over a period of months. Eg: prepaid insurance or annual software lic
+  no_of_months  BIGINT  -- No of Months (Revenue)
+  enable_deferred_expense  TINYINT  -- boolean 0/1; Income from this item will be recognized over a period of months instead of all at once. Eg: annual subscripti
+  no_of_months_exp  BIGINT  -- No of Months (Expense)
+  inspection_required_before_purchase  TINYINT  -- boolean 0/1; A quality inspection must be completed before generating a Purchase Receipt for this item.
+  inspection_required_before_delivery  TINYINT  -- boolean 0/1; A quality inspection must be completed before generating a Delivery Note for this item.
+  quality_inspection_template  VARCHAR  -- -> "tabQuality Inspection Template".name
+  default_bom  VARCHAR  -- -> "tabBOM".name
+  is_sub_contracted_item  TINYINT  -- Is Subcontracted Item; boolean 0/1; Enable if a vendor manufactures this item for you. You can choose to provide them raw materials using the defa
+  customer_code  VARCHAR
+  total_projected_qty  DOUBLE
+  over_delivery_receipt_allowance  DOUBLE  -- Over Delivery/Receipt Allowance (%); Percentage by which over-delivery or over-receipt is allowed against a Sales/Purchase Order for this item. If 
+  over_billing_allowance  DOUBLE  -- Over Billing Allowance (%); Percentage by which over-billing is allowed against a Sales/Purchase Order for this item. If not set, value fr
+  auto_create_assets  TINYINT  -- Auto create assets on purchase; boolean 0/1
+  default_item_manufacturer  VARCHAR  -- -> "tabManufacturer".name
+  default_manufacturer_part_no  VARCHAR
+  grant_commission  TINYINT  -- boolean 0/1; If enabled, sales from this item will be included in Sales Person and Sales Partner commission calculations
+  is_grouped_asset  TINYINT  -- Create Grouped Asset; boolean 0/1; Creates a single grouped asset instead of individual assets when purchased in bulk.
+  allow_negative_stock  TINYINT  -- boolean 0/1; Allow stock to go below zero for this item, even if negative stock is disabled in Stock Settings.
+  production_capacity  BIGINT
+  purchase_tax_withholding_category  VARCHAR  -- -> "tabTax Withholding Category".name
+  sales_tax_withholding_category  VARCHAR  -- -> "tabTax Withholding Category".name
+
+### "tabItem Group"  -- Item Group  [TREE]
+-- An Item Group is a way to classify items based on types.
+  name  VARCHAR  -- primary key
+  item_group_name  VARCHAR  -- required
+  parent_item_group  VARCHAR  -- -> "tabItem Group".name
+  is_group  TINYINT  -- boolean 0/1; Only leaf nodes are allowed in transaction
+  image  VARCHAR
+  lft  BIGINT
+  rgt  BIGINT
+  old_parent  VARCHAR  -- -> "tabItem Group".name
+
+### "tabTerritory"  -- Territory  [TREE]
+-- Classification of Customers by region
+  name  VARCHAR  -- primary key
+  territory_name  VARCHAR  -- required
+  parent_territory  VARCHAR  -- -> "tabTerritory".name
+  is_group  TINYINT  -- boolean 0/1; Only leaf nodes are allowed in transaction
+  territory_manager  VARCHAR  -- -> "tabSales Person".name; For reference
+  lft  BIGINT
+  rgt  BIGINT
+  old_parent  VARCHAR  -- -> "tabTerritory".name
+
+### "tabPayment Entry"  -- Payment Entry  [SUBMITTABLE]
+  name  VARCHAR  -- primary key
+  docstatus  TINYINT  -- 0=Draft 1=Submitted 2=Cancelled
+  naming_series  VARCHAR  -- Series; one of: ACC-PAY-.YYYY.-; required
+  payment_type  VARCHAR  -- one of: Receive | Pay | Internal Transfer; required
+  posting_date  DATE  -- required
+  company  VARCHAR  -- -> "tabCompany".name; required
+  cost_center  VARCHAR  -- -> "tabCost Center".name
+  mode_of_payment  VARCHAR  -- -> "tabMode of Payment".name
+  party_type  VARCHAR  -- -> "tabDocType".name
+  party  VARCHAR
+  party_name  VARCHAR
+  contact_person  VARCHAR  -- Contact; -> "tabContact".name
+  contact_email  VARCHAR  -- Email
+  paid_from  VARCHAR  -- Account Paid From; -> "tabAccount".name; required
+  paid_from_account_currency  VARCHAR  -- Account Currency (From); -> "tabCurrency".name; required
+  paid_to  VARCHAR  -- Account Paid To; -> "tabAccount".name; required
+  paid_to_account_currency  VARCHAR  -- Account Currency (To); -> "tabCurrency".name; required
+  paid_amount  DECIMAL(18,6)  -- required
+  source_exchange_rate  DOUBLE  -- required
+  base_paid_amount  DECIMAL(18,6)  -- Paid Amount (Company Currency); required
+  received_amount  DECIMAL(18,6)  -- required
+  target_exchange_rate  DOUBLE  -- required
+  base_received_amount  DECIMAL(18,6)  -- Received Amount (Company Currency); required
+  total_allocated_amount  DECIMAL(18,6)
+  base_total_allocated_amount  DECIMAL(18,6)  -- Total Allocated Amount (Company Currency)
+  unallocated_amount  DECIMAL(18,6)
+  difference_amount  DECIMAL(18,6)  -- Difference Amount (Company Currency)
+  reference_no  VARCHAR  -- Cheque/Reference No
+  reference_date  DATE  -- Cheque/Reference Date
+  clearance_date  DATE
+  project  VARCHAR  -- -> "tabProject".name
+  remarks  VARCHAR
+  letter_head  VARCHAR  -- -> "tabLetter Head".name
+  print_heading  VARCHAR  -- -> "tabPrint Heading".name
+  bank  VARCHAR
+  bank_account_no  VARCHAR
+  payment_order  VARCHAR  -- -> "tabPayment Order".name
+  auto_repeat  VARCHAR  -- -> "tabAuto Repeat".name
+  amended_from  VARCHAR  -- -> "tabPayment Entry".name
+  title  VARCHAR
+  bank_account  VARCHAR  -- Company Bank Account; -> "tabBank Account".name
+  party_bank_account  VARCHAR  -- -> "tabBank Account".name
+  payment_order_status  VARCHAR  -- one of: Initiated | Payment Ordered
+  status  VARCHAR  -- one of: Draft | Submitted | Cancelled
+  custom_remarks  TINYINT  -- boolean 0/1
+  tax_withholding_category  VARCHAR  -- -> "tabTax Withholding Category".name
+  purchase_taxes_and_charges_template  VARCHAR  -- -> "tabPurchase Taxes and Charges Template".name
+  sales_taxes_and_charges_template  VARCHAR  -- -> "tabSales Taxes and Charges Template".name
+  base_total_taxes_and_charges  DECIMAL(18,6)  -- Total Taxes and Charges (Company Currency)
+  total_taxes_and_charges  DECIMAL(18,6)
+  paid_amount_after_tax  DECIMAL(18,6)
+  base_paid_amount_after_tax  DECIMAL(18,6)  -- Paid Amount After Tax (Company Currency)
+  received_amount_after_tax  DECIMAL(18,6)
+  base_received_amount_after_tax  DECIMAL(18,6)  -- Received Amount After Tax (Company Currency)
+  paid_from_account_type  VARCHAR
+  paid_to_account_type  VARCHAR
+  book_advance_payments_in_separate_party_account  TINYINT  -- boolean 0/1
+  base_in_words  VARCHAR  -- In Words (Company Currency)
+  in_words  VARCHAR
+  reconcile_on_advance_payment_date  TINYINT  -- boolean 0/1
+  is_opening  VARCHAR  -- one of: No | Yes
+  apply_tds  TINYINT  -- Consider for Tax Withholding; boolean 0/1
+  tax_withholding_group  VARCHAR  -- -> "tabTax Withholding Group".name
+  ignore_tax_withholding_threshold  TINYINT  -- boolean 0/1
+  override_tax_withholding_entries  TINYINT  -- Edit Tax Withholding Entries; boolean 0/1
+
+### "tabSales Person"  -- Sales Person  [TREE]
+-- All Sales Transactions can be tagged against multiple Sales Persons so that you can set and monitor targets.
+  name  VARCHAR  -- primary key
+  sales_person_name  VARCHAR  -- required
+  parent_sales_person  VARCHAR  -- -> "tabSales Person".name; Select company name first.
+  commission_rate  VARCHAR
+  is_group  TINYINT  -- boolean 0/1; required
+  enabled  TINYINT  -- boolean 0/1
+  employee  VARCHAR  -- -> "tabEmployee".name
+  department  VARCHAR  -- -> "tabDepartment".name
+  lft  BIGINT
+  rgt  BIGINT
+  old_parent  VARCHAR

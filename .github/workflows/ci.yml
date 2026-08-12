@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Invariant 11. Runs alone, first, and on every commit - its whole job is to fail
+  # on the first copied file, not to audit a finished tree. Needs no site, no
+  # database and no app install, so it reports in seconds rather than after a bench.
+  clean-room:
+    name: Clean room
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: nakhoda }
+
+      # The corpus. Without an explicit checkout the gate has nothing to compare
+      # against and would pass vacuously, which is worse than not running it -
+      # setUpClass turns an empty corpus into a hard failure when CI is set.
+      - uses: actions/checkout@v4
+        with:
+          repository: frappe/insights
+          ref: develop
+          path: corpus/insights
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/nakhoda
+          key: shingles-${{ hashFiles('corpus/insights/**/*.py') }}
+
+      - name: Gate
+        working-directory: nakhoda
+        env:
+          NAKHODA_COPYLEFT_ROOTS: ${{ github.workspace }}/corpus/insights
+        run: |
+          python -m nakhoda.tests.clean_room
+          python -m unittest nakhoda.tests.test_clean_room -v
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install ruff
+      - run: ruff check .
+      - run: ruff format --check .

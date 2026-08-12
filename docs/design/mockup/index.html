@@ -1,0 +1,1013 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<title>Nakhoda — frontend mockup</title>
+<link rel="stylesheet" href="./tokens.css">
+<link rel="stylesheet" href="./app.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="i-ask"><path d="M8 2.5a5.5 5.5 0 0 0-3.4 9.8V14l2.2-1.2a5.5 5.5 0 1 0 1.2-10.3Z"/></g>
+<g id="i-model"><ellipse cx="8" cy="4" rx="5.5" ry="2.2"/><path d="M2.5 4v8c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2V4"/><path d="M2.5 8c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2"/></g>
+<g id="i-verified"><path d="M8 1.8 2.8 4v4c0 3.2 2.2 5.6 5.2 6.4 3-.8 5.2-3.2 5.2-6.4V4Z"/><path d="m5.9 7.8 1.5 1.5 2.9-3"/></g>
+<g id="i-book"><path d="M2.6 3.2A1.2 1.2 0 0 1 3.8 2h8.4a1.2 1.2 0 0 1 1.2 1.2v9.6a1.2 1.2 0 0 1-1.2 1.2H3.8a1.2 1.2 0 0 1-1.2-1.2Z"/><path d="M6 2v12"/></g>
+<g id="i-gauge"><path d="M13.5 10a5.5 5.5 0 1 0-11 0"/><path d="m8 10 2.8-2.8"/></g>
+<g id="i-plug"><path d="M6 2v4M10 2v4"/><path d="M4.5 6h7v2.5a3.5 3.5 0 0 1-7 0Z"/><path d="M8 12v2"/></g>
+<g id="i-table"><rect x="2.2" y="2.8" width="11.6" height="10.4" rx="1.2"/><path d="M2.2 6.4h11.6M6.4 6.4v6.8"/></g>
+<g id="i-chev"><path d="m6 4 4 4-4 4"/></g>
+<g id="i-check"><path d="m3 8.4 3.2 3.2L13 4.8"/></g>
+<g id="i-alert"><path d="M8 2.8 1.8 13.2h12.4Z"/><path d="M8 6.6v3M8 11.2v.1"/></g>
+<g id="i-lock"><rect x="3.2" y="7" width="9.6" height="6.6" rx="1.4"/><path d="M5.4 7V5.2a2.6 2.6 0 0 1 5.2 0V7"/></g>
+<g id="i-up"><path d="M8 12.5v-9M4.2 7.3 8 3.5l3.8 3.8"/></g>
+<g id="i-eye"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z"/><circle cx="8" cy="8" r="1.9"/></g>
+<g id="i-play"><path d="M5 3.4 12 8l-7 4.6Z"/></g>
+<g id="i-sparkle"><path d="M8 2.2 9.4 6 13 7.4 9.4 8.8 8 12.6 6.6 8.8 3 7.4 6.6 6Z"/></g>
+<g id="i-moon"><path d="M13 9.4A5.6 5.6 0 0 1 6.6 3a5.6 5.6 0 1 0 6.4 6.4Z"/></g>
+</defs></svg>
+
+<div class="shell">
+
+  <!-- ═══ rail ═══ -->
+  <aside class="rail">
+    <div class="space">
+      <div class="space-mark">N</div>
+      <div>
+        <div class="space-name">Finance &amp; Sales</div>
+        <div class="space-sub">Nakhoda Space · 41 tables</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item" aria-current="true" data-screen="ask">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-ask"/></svg>Ask</button>
+      <button class="nav-item" data-screen="workbook">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-book"/></svg>Workbooks<span class="nav-count">12</span></button>
+      <button class="nav-item" data-screen="dashboard">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-table"/></svg>Dashboards<span class="nav-count">6</span></button>
+
+      <div class="nav-label">Trust layer</div>
+      <button class="nav-item" data-screen="model">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-model"/></svg>Semantic Model</button>
+      <button class="nav-item" data-screen="verified">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-verified"/></svg>Verified Queries<span class="nav-count">34</span></button>
+      <button class="nav-item" data-screen="accuracy">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-gauge"/></svg>Accuracy<span class="nav-count">95.8%</span></button>
+      <button class="nav-item" data-screen="plugins">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-plug"/></svg>Plugins<span class="nav-count">3</span></button>
+    </nav>
+
+    <div class="rail-foot">
+      <div class="model-pill"><span class="dot dot-green"></span>Llama 3.3 70B · on-prem</div>
+      <div class="model-pill"><span class="dot dot-amber"></span>Ravi Nair · Sales Manager</div>
+    </div>
+  </aside>
+
+  <!-- ═══ main ═══ -->
+  <div class="main">
+    <div class="topbar">
+      <span class="crumb">Ask <b>· Q3 review</b></span>
+      <div class="topbar-right">
+        <button class="btn btn-ghost" id="annot">Hide notes</button>
+        <button class="btn btn-ghost" id="theme"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-moon"/></svg></button>
+        <button class="btn" id="insp-toggle"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-eye"/></svg>Inspect</button>
+      </div>
+    </div>
+
+    <!-- ─── screen: ASK ─── -->
+    <div class="scroll" data-panel="ask">
+      <div class="page">
+
+        <div class="note"><b>Design thesis.</b> Every competitor renders a chat bubble and hides the
+          SQL behind a disclosure triangle. Nakhoda renders an <b>answer with its provenance
+          attached</b> — the assumptions it made, the filters it injected, and the rows your
+          permissions removed. The assumption taxonomy below is not invented: it is the seven
+          trap classes measured in <code>semantic-bench</code> (§6.0), where they moved a
+          model from 78.3% to 95.8%.</div>
+
+        <!-- ── turn 1 ── -->
+        <div class="turn">
+          <div class="ask">
+            <div class="avatar">RN</div>
+            <div class="ask-text">What was our revenue in 2026 so far, by territory?</div>
+          </div>
+
+          <div class="trace">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-chev"/></svg>
+            <span>Resolved 4 entities, 1 join path, 5 operations</span>
+            <span class="trace-steps">
+              <i class="tick"></i><i class="tick"></i><i class="tick"></i><i class="tick"></i><i class="tick"></i>
+            </span>
+            <span>· 1.9s</span>
+          </div>
+
+          <div class="answer">
+            <div class="answer-head">
+              <span class="chip chip-generated">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-sparkle"/></svg>Generated</span>
+              <span class="answer-title">Sales Invoice → Customer → Territory · FY 2026 to date</span>
+              <button class="btn btn-sm">Save to workbook</button>
+            </div>
+
+            <div class="answer-body">
+              <div class="metric">
+                <div class="metric-value">₹62.4 L</div>
+                <div class="metric-delta down">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" style="transform:rotate(180deg)"><use href="#i-up"/></svg>13.7%
+                </div>
+              </div>
+              <div class="metric-caption">Net of tax, excluding returns · 480 invoices · 1 Jan – 11 Aug 2026 · vs ₹72.3 L same period 2025</div>
+
+              <div class="chart">
+                <div class="bars">
+                  <div class="bar-col"><span class="bar-val">18.2</span><div class="bar" style="height:100%"></div></div>
+                  <div class="bar-col"><span class="bar-val">17.9</span><div class="bar" style="height:98.2%"></div></div>
+                  <div class="bar-col"><span class="bar-val">16.8</span><div class="bar" style="height:92.3%"></div></div>
+                  <div class="bar-col"><span class="bar-val">9.6</span><div class="bar muted" style="height:53.1%"></div></div>
+                </div>
+                <div class="axis">
+                  <div class="bar-label">Texas</div><div class="bar-label">Maharashtra</div>
+                  <div class="bar-label">California</div><div class="bar-label">Karnataka</div>
+                </div>
+                <div class="chart-unit">₹ lakh · four permitted territories</div>
+              </div>
+            </div>
+
+            <div class="assumptions">
+              <div class="assumptions-head">
+                <h4>Assumptions</h4>
+                <span class="chip chip-gray">5 applied · 1 needs you</span>
+              </div>
+              <div class="assumption-list">
+                <div class="assumption">
+                  <span class="a-tag a-auto">docstatus</span>
+                  <span>Counted submitted invoices only — drafts and cancelled excluded (<code>docstatus = 1</code>)</span>
+                  <span class="a-edit">Change</span>
+                </div>
+                <div class="assumption">
+                  <span class="a-tag a-auto">measure</span>
+                  <span>“Revenue” resolved to <code>base_net_total</code> — net of tax, in company currency</span>
+                  <span class="a-edit">Change</span>
+                </div>
+                <div class="assumption">
+                  <span class="a-tag a-auto">currency</span>
+                  <span>Summed the <code>base_</code> column, so multi-currency invoices are comparable</span>
+                  <span class="a-edit">Change</span>
+                </div>
+                <div class="assumption">
+                  <span class="a-tag a-auto">join</span>
+                  <span>Territory reached via <code>Sales Invoice.customer → Customer.territory</code> (Link graph)</span>
+                  <span class="a-edit">Change</span>
+                </div>
+                <div class="assumption">
+                  <span class="a-tag a-auto">grain</span>
+                  <span>Aggregated at invoice grain — no child-table fan-out</span>
+                  <span class="a-edit">Change</span>
+                </div>
+                <div class="assumption">
+                  <span class="a-tag a-ask">returns</span>
+                  <span>Credit notes excluded (<code>is_return = 0</code>) — <b>you did not specify</b></span>
+                  <span class="a-edit">Change</span>
+                </div>
+              </div>
+
+              <div class="ambiguity">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-alert"/></svg>
+                <span>Netting returns off would give <b>₹59.5 L</b>. Which do you mean by “revenue”?</span>
+                <button class="btn btn-sm">Net of returns</button>
+                <button class="btn btn-sm btn-primary">Keep gross</button>
+              </div>
+            </div>
+
+            <div class="perm-note">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-lock"/></svg>
+              <span>232 invoices (₹39.2 L) in <b>Germany</b> and <b>Kenya</b> are outside your territory permissions and are not in this total.</span>
+            </div>
+
+            <div class="receipt">
+              <span><b>5</b> operations</span><span class="sep">·</span>
+              <span><b>2</b> tables</span><span class="sep">·</span>
+              <span><b>0.4s</b> query</span><span class="sep">·</span>
+              <span><b>1,204</b> tokens</span><span class="sep">·</span>
+              <span><b>$0.0031</b></span>
+              <div class="receipt-actions">
+                <button class="btn btn-sm" data-open-insp>Inspect 5 steps</button>
+                <button class="btn btn-sm">Mark verified</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="note"><b>The second path.</b> When a question matches a
+          <code>Nakhoda Verified Query</code>, the agent must prefer it over generating SQL —
+          and the answer is labelled differently. Verified answers skip generation entirely:
+          no tokens, no ambiguity, sub-100ms.</div>
+
+        <!-- ── turn 2 ── -->
+        <div class="turn">
+          <div class="ask">
+            <div class="avatar">RN</div>
+            <div class="ask-text">And how much is still unpaid?</div>
+          </div>
+
+          <div class="trace">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-chev"/></svg>
+            <span>Matched verified query <b>“Outstanding receivables”</b> — no SQL generated</span>
+            <span>· 0.1s</span>
+          </div>
+
+          <div class="answer">
+            <div class="answer-head">
+              <span class="chip chip-verified">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-verified"/></svg>Verified</span>
+              <span class="answer-title">Approved by Meera Shah · Finance · 14 Jul 2026 · used 89×</span>
+              <button class="btn btn-sm">Save to workbook</button>
+            </div>
+
+            <div class="answer-body" style="padding-bottom:14px">
+              <div class="metric">
+                <div class="metric-value">₹1.60 Cr</div>
+              </div>
+              <div class="metric-caption">Outstanding across 1,034 submitted invoices · 921 overdue &gt; 90 days</div>
+
+              <div class="table-wrap" style="margin-top:16px">
+                <table>
+                  <thead><tr><th>Ageing bucket</th><th class="t-num">Invoices</th><th class="t-num">Outstanding</th><th class="t-num">Share</th></tr></thead>
+                  <tbody>
+                    <tr><td>Not due</td><td class="t-num">14</td><td class="t-num">₹0.03 Cr</td><td class="t-num t-mute">1.6%</td></tr>
+                    <tr><td>1 – 30 days</td><td class="t-num">32</td><td class="t-num">₹0.05 Cr</td><td class="t-num t-mute">3.4%</td></tr>
+                    <tr><td>31 – 90 days</td><td class="t-num">67</td><td class="t-num">₹0.11 Cr</td><td class="t-num t-mute">6.8%</td></tr>
+                    <tr><td>&gt; 90 days</td><td class="t-num">921</td><td class="t-num">₹1.41 Cr</td><td class="t-num t-mute">88.2%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="receipt">
+              <span><b>Verified query</b> · parameters: company, as_of_date</span><span class="sep">·</span>
+              <span><b>0.1s</b></span><span class="sep">·</span>
+              <span><b>0</b> tokens</span>
+              <div class="receipt-actions">
+                <button class="btn btn-sm">View definition</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="composer-wrap">
+        <div class="composer">
+          <div class="composer-input" contenteditable="true" data-placeholder="Ask about Finance &amp; Sales…"></div>
+          <div class="composer-foot">
+            <span class="scope"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-model"/></svg>41 tables</span>
+            <span class="scope"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-lock"/></svg>Your permissions</span>
+            <span class="scope"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-play"/></svg>Dry-run first</span>
+            <button class="btn btn-primary">Ask <span class="kbd">↵</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── screen: SEMANTIC MODEL ─── -->
+    <div class="scroll" data-panel="model" hidden>
+      <div class="page page-wide">
+        <div class="page-head">
+          <div class="page-title">Semantic Model</div>
+          <div class="page-desc">Generated from <code class="mono">frappe.get_meta()</code> across 41 DocTypes.
+            Regenerates on <code class="mono">bench migrate</code>; your edits survive as overrides.</div>
+        </div>
+
+        <div class="note" style="margin-left:0"><b>This screen is the moat.</b> Databricks and Metabase
+          ask you to author a semantic layer by hand. Frappe defined the schema, so <b>80.6%</b> of it is
+          derivable with no human in the loop — and the measured value of that derivation is <b>+17.5 pp</b>
+          of NL2SQL accuracy (§6.0). What is left for a human is the <b>measures</b>, which no schema
+          declares.</div>
+
+        <div class="grid3" style="margin-bottom:12px">
+          <div class="card stat">
+            <div class="stat-label">Derived</div>
+            <div class="stat-value">80.6%</div>
+            <div class="stat-sub">of 7,277 real fields · join, domain, grain, time, unit</div>
+            <div class="meter"><i style="width:80.6%"></i></div>
+          </div>
+          <div class="card stat">
+            <div class="stat-label">Described</div>
+            <div class="stat-value">5.0%</div>
+            <div class="stat-sub">of ERPNext's 10,413 fields, all 528 DocTypes</div>
+            <div class="meter"><i class="red" style="width:5%"></i></div>
+          </div>
+          <div class="card stat">
+            <div class="stat-label">Measures defined</div>
+            <div class="stat-value">23</div>
+            <div class="stat-sub">hand-authored · needs 31</div>
+            <div class="meter"><i class="amber" style="width:74%"></i></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Entities</span>
+            <span class="chip chip-gray">41 tables · 8 with grain warnings</span>
+            <button class="btn btn-sm">Regenerate</button>
+          </div>
+
+          <div class="ent">
+            <div class="ent-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-table"/></svg></div>
+            <div>
+              <div class="ent-name">Sales Invoice <span class="t-mute mono">tabSales Invoice</span></div>
+              <div class="ent-meta">233 fields · 155 real · 51 Link · 4 Select · submittable</div>
+            </div>
+            <div class="ent-right">
+              <span class="chip chip-verified">complete</span>
+              <span class="t-mute" style="font-size:var(--text-tiny)">6 measures</span>
+            </div>
+          </div>
+
+          <div class="ent">
+            <div class="ent-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-table"/></svg></div>
+            <div>
+              <div class="ent-name">Sales Invoice Item <span class="t-mute mono">tabSales Invoice Item</span></div>
+              <div class="ent-meta">117 fields · child of Sales Invoice via <code class="mono">parenttype</code></div>
+            </div>
+            <div class="ent-right">
+              <span class="chip chip-warn">grain: line</span>
+              <span class="t-mute" style="font-size:var(--text-tiny)">3 measures</span>
+            </div>
+          </div>
+
+          <div class="ent">
+            <div class="ent-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-table"/></svg></div>
+            <div>
+              <div class="ent-name">Customer <span class="t-mute mono">tabCustomer</span></div>
+              <div class="ent-meta">87 fields · 22 Link out · reached from 14 tables</div>
+            </div>
+            <div class="ent-right">
+              <span class="chip chip-verified">complete</span>
+              <span class="t-mute" style="font-size:var(--text-tiny)">hub</span>
+            </div>
+          </div>
+
+          <div class="ent">
+            <div class="ent-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-table"/></svg></div>
+            <div>
+              <div class="ent-name">Territory <span class="t-mute mono">tabTerritory</span></div>
+              <div class="ent-meta">10 fields · tree (<code class="mono">parent_territory</code>) · 8 leaf, 2 group</div>
+            </div>
+            <div class="ent-right">
+              <span class="chip chip-warn">tree: roll-up?</span>
+              <span class="t-mute" style="font-size:var(--text-tiny)">0 measures</span>
+            </div>
+          </div>
+
+          <div class="ent">
+            <div class="ent-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-table"/></svg></div>
+            <div>
+              <div class="ent-name">Payment Entry <span class="t-mute mono">tabPayment Entry</span></div>
+              <div class="ent-meta">93 fields · 67 real · submittable · 5 Select domains</div>
+            </div>
+            <div class="ent-right">
+              <span class="chip chip-verified">complete</span>
+              <span class="t-mute" style="font-size:var(--text-tiny)">4 measures</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Sales Invoice · what was derived</span>
+            <button class="btn btn-sm">Edit overrides</button>
+          </div>
+          <div class="card-body">
+            <div class="grid2">
+              <div>
+                <dl>
+                  <div class="kv"><dt>Enumerated domains</dt><dd>4 Select fields · 19 values</dd></div>
+                  <div class="kv"><dt>Join graph</dt><dd>51 Link fields → 34 targets, typed</dd></div>
+                  <div class="kv"><dt>Time dimensions</dt><dd>5 · default <code class="mono">posting_date</code></dd></div>
+                  <div class="kv"><dt>Guardrails</dt><dd><code class="mono">docstatus</code>, <code class="mono">is_return</code></dd></div>
+                  <div class="kv"><dt>Synonyms</dt><dd>32 locales, from <code class="mono">.po</code></dd></div>
+                </dl>
+              </div>
+              <div>
+                <div class="hint"><b>status</b> domain, verbatim from the DocType — so the model
+                  never invents a status string:<br>
+                  <span class="mono" style="color:var(--ink-gray-6);line-height:1.9">Draft · Return · Credit Note Issued ·
+                  Submitted · Paid · Partly Paid · Unpaid · Unpaid and Discounted · Partly Paid and Discounted ·
+                  Overdue and Discounted · Overdue · Cancelled · Internal Transfer</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="note" style="margin-left:0"><b>How these were measured.</b> A scan of all 528
+          installed ERPNext DocTypes (<code class="mono">frappe.get_meta()</code> JSON, 10,413 fields).
+          <b>Real fields</b> excludes layout scaffolding and buttons — 7,277 remain, the same definition
+          used for <span class="mono">155 real</span> above. <b>Derived</b> counts a field whose
+          <span class="mono">fieldtype</span> alone yields schema semantics: a join target
+          (<span class="mono">Link</span>), a value domain (<span class="mono">Select</span>,
+          <span class="mono">Check</span>), a grain (<span class="mono">Table</span>), a time dimension,
+          or a unit-bearing measure. A label without a type gives a name, not semantics, and is
+          <i>not</i> counted — that is the 19.4% a human still owns.</div>
+
+      </div>
+    </div>
+
+    <!-- ─── screen: VERIFIED QUERIES ─── -->
+    <div class="scroll" data-panel="verified" hidden>
+      <div class="page page-wide">
+        <div class="page-head">
+          <div class="page-title">Verified Queries</div>
+          <div class="page-desc">Named, parameterised, human-approved. The agent prefers these over
+            generating SQL, and labels the answer accordingly.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">34 verified</span>
+            <span class="chip chip-gray">covering 61% of asked questions</span>
+            <button class="btn btn-sm btn-primary">New from last answer</button>
+          </div>
+          <table>
+            <thead><tr><th>Query</th><th>Owner</th><th class="t-num">Used</th><th class="t-num">Last run</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td><b>Outstanding receivables</b><div class="t-mute">company, as_of_date</div></td>
+                  <td>Meera Shah</td><td class="t-num">89</td><td class="t-num t-mute">2m ago</td>
+                  <td><span class="chip chip-verified">approved</span></td></tr>
+              <tr><td><b>Revenue by territory</b><div class="t-mute">from_date, to_date, net_of_returns</div></td>
+                  <td>Meera Shah</td><td class="t-num">54</td><td class="t-num t-mute">1h ago</td>
+                  <td><span class="chip chip-verified">approved</span></td></tr>
+              <tr><td><b>Top items by margin</b><div class="t-mute">period, item_group</div></td>
+                  <td>Ravi Nair</td><td class="t-num">31</td><td class="t-num t-mute">yesterday</td>
+                  <td><span class="chip chip-verified">approved</span></td></tr>
+              <tr><td><b>Customer payment behaviour</b><div class="t-mute">customer, months</div></td>
+                  <td>Ravi Nair</td><td class="t-num">0</td><td class="t-num t-mute">—</td>
+                  <td><span class="chip chip-warn">awaiting review</span></td></tr>
+              <tr><td><b>Stock ageing by warehouse</b><div class="t-mute">warehouse, as_of_date</div></td>
+                  <td>Amit Roy</td><td class="t-num">18</td><td class="t-num t-mute">3d ago</td>
+                  <td><span class="chip chip-verified">approved</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note" style="margin-left:0"><b>Why this is a DocType, not a feature.</b> Approval is
+          enforced by Frappe's own permission system — the workflow, the owner field and the audit
+          trail already exist. Building this as app-level state would reimplement all three, worse.</div>
+      </div>
+    </div>
+
+    <!-- ─── screen: ACCURACY ─── -->
+    <div class="scroll" data-panel="accuracy" hidden>
+      <div class="page page-wide">
+        <div class="page-head">
+          <div class="page-title">Accuracy</div>
+          <div class="page-desc">Question plus gold result. Run the agent, compare result sets, report a
+            number. No prompt change ships without this moving in the right direction.</div>
+        </div>
+
+        <div class="grid3" style="margin-bottom:12px">
+          <div class="card stat">
+            <div class="stat-label">Current</div>
+            <div class="stat-value">95.8%</div>
+            <div class="stat-sub">40 questions × 3 model tiers · paired single-shot</div>
+            <div class="meter"><i style="width:95.8%"></i></div>
+          </div>
+          <div class="card stat">
+            <div class="stat-label">Without semantic layer</div>
+            <div class="stat-value">78.3%</div>
+            <div class="stat-sub">same model, raw DDL</div>
+            <div class="meter"><i class="amber" style="width:78.3%"></i></div>
+          </div>
+          <div class="card stat">
+            <div class="stat-label">Gate</div>
+            <div class="stat-value">90.6%</div>
+            <div class="stat-sub">Wilson 95% lower bound · below this, no UAT</div>
+            <div class="meter"><i style="width:90.6%"></i></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title">By trap class</span>
+            <span class="chip chip-gray">raw DDL → with semantic model</span></div>
+          <table>
+            <thead><tr><th>Trap</th><th class="t-num">n</th><th class="t-num">Raw</th><th class="t-num">With model</th><th class="t-num">Δ</th></tr></thead>
+            <tbody>
+              <tr><td>Join without a foreign key</td><td class="t-num">6</td><td class="t-num t-mute">66.7%</td><td class="t-num">100%</td><td class="t-num" style="color: var(--ink-green-text)">+33.3</td></tr>
+              <tr><td>Child-table grain</td><td class="t-num">7</td><td class="t-num t-mute">66.7%</td><td class="t-num">90.5%</td><td class="t-num" style="color: var(--ink-green-text)">+23.8</td></tr>
+              <tr><td>Docstatus / drafts</td><td class="t-num">8</td><td class="t-num t-mute">75.0%</td><td class="t-num">95.8%</td><td class="t-num" style="color: var(--ink-green-text)">+20.8</td></tr>
+              <tr><td>Returns treatment</td><td class="t-num">4</td><td class="t-num t-mute">75.0%</td><td class="t-num">91.7%</td><td class="t-num" style="color: var(--ink-green-text)">+16.7</td></tr>
+              <tr><td>Code vs display name</td><td class="t-num">2</td><td class="t-num t-mute">83.3%</td><td class="t-num">100%</td><td class="t-num" style="color: var(--ink-green-text)">+16.7</td></tr>
+              <tr><td>Currency normalisation</td><td class="t-num">3</td><td class="t-num t-mute">88.9%</td><td class="t-num">100%</td><td class="t-num" style="color: var(--ink-green-text)">+11.1</td></tr>
+              <tr><td>Enumerated value domain</td><td class="t-num">5</td><td class="t-num t-mute">86.7%</td><td class="t-num">93.3%</td><td class="t-num" style="color: var(--ink-green-text)">+6.7</td></tr>
+              <tr><td>Control — answerable from column names</td><td class="t-num">5</td><td class="t-num t-mute">100%</td><td class="t-num">100%</td><td class="t-num t-mute">+0.0</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note" style="margin-left:0"><b>Real numbers.</b> These are the measured results from
+          <code>semantic-bench</code> — 529 real ERPNext v16 DocTypes, 4,200 seeded invoices,
+          40 hand-authored gold SQL queries, three model tiers, McNemar exact p = 1.9e-05.
+          A shipping product would show the customer's own run here, on their own DocTypes.</div>
+      </div>
+    </div>
+
+    <!-- ─── screen: WORKBOOK ─── -->
+    <div class="scroll" data-panel="workbook" hidden>
+      <div class="page page-wide">
+        <div class="page-head">
+          <div class="page-title">Q3 territory review</div>
+          <div class="page-desc">Workbook · 4 charts · shared with Finance · built from 6 answers</div>
+        </div>
+
+        <div class="grid2">
+          <div class="card">
+            <div class="card-head"><span class="card-title">Revenue by territory</span>
+              <span class="chip chip-generated">generated</span></div>
+            <div class="card-body">
+              <div class="bars" style="height:104px">
+                <div class="bar-col"><div class="bar" style="height:92%"></div></div>
+                <div class="bar-col"><div class="bar" style="height:73%"></div></div>
+                <div class="bar-col"><div class="bar" style="height:60%"></div></div>
+                <div class="bar-col"><div class="bar" style="height:53%"></div></div>
+                <div class="bar-col"><div class="bar muted" style="height:39%"></div></div>
+                <div class="bar-col"><div class="bar muted" style="height:24%"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><span class="card-title">Receivables ageing</span>
+              <span class="chip chip-verified">verified</span></div>
+            <div class="card-body">
+              <div class="bars" style="height:104px">
+                <div class="bar-col"><div class="bar" style="height:88%"></div></div>
+                <div class="bar-col"><div class="bar" style="height:34%"></div></div>
+                <div class="bar-col"><div class="bar" style="height:18%"></div></div>
+                <div class="bar-col"><div class="bar" style="height:8%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title">Reproducibility</span>
+            <button class="btn btn-sm">Re-run all</button></div>
+          <div class="card-body">
+            <dl>
+              <div class="kv"><dt>Semantic model version</dt><dd class="mono">sm-2026.08.09-a4f1 · 41 tables</dd></div>
+              <div class="kv"><dt>Model</dt><dd>Llama 3.3 70B · on-prem · temp 0</dd></div>
+              <div class="kv"><dt>Prompts retained</dt><dd>6 of 6</dd></div>
+              <div class="kv"><dt>Answers still reproducible</dt><dd style="color: var(--ink-green-text)">6 of 6 · last checked 2h ago</dd></div>
+              <div class="kv"><dt>Permission context</dt><dd>evaluated per viewer, not baked in</dd></div>
+            </dl>
+          </div>
+        </div>
+
+        <div class="note" style="margin-left:0"><b>The addition Insights lacks.</b> An artifact records
+          which semantic model version and which prompt produced it (§6.3). Without that pair you
+          cannot reproduce or audit an answer six months later — and the model regenerates on every
+          <code>bench migrate</code>.</div>
+      </div>
+    </div>
+
+    <!-- ─── screen: DASHBOARD ─── -->
+    <div class="scroll" data-panel="dashboard" hidden>
+      <div class="page page-wide">
+        <div class="page-head">
+          <div class="page-title">Receivables health</div>
+          <div class="page-desc">Rendered from <code class="mono">Intelligence Template · finance.receivables</code>
+            — a fixture, not an <code class="mono">if/elif</code> branch. Six shipped domains are six
+            records; a seventh costs one fixture and zero Python.</div>
+        </div>
+
+        <div class="note" style="margin-left:0"><b>The chat cannot write.</b> Every AI dashboard
+          tool lets the model rewrite the page. Nakhoda's agent emits a <code>DashboardPatch</code>
+          — a closed set of ops over <code>items[]</code> — which is validated, dry-run, and shown
+          as a diff you approve. An adversarial prompt asking for a write or a <code>DROP</code>
+          fails because <b>the grammar has no op for it</b>, not because a filter caught it.</div>
+
+        <div class="turn" style="margin:20px 0 14px">
+          <div class="ask">
+            <div class="avatar">RN</div>
+            <div class="ask-text">Add a 30-day collections forecast, only count invoices due this
+              financial year, and drop the credit-limit chart</div>
+          </div>
+          <div class="trace">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-chev"/></svg>
+            <span>Emitted <b>DashboardPatch</b> · 3 ops · validated · dry-run compiled, not executed</span>
+            <span class="trace-steps">
+              <span class="dot dot-green"></span><span class="dot dot-green"></span><span class="dot dot-amber"></span>
+            </span>
+            <span>· awaiting your approval</span>
+          </div>
+        </div>
+
+        <div class="grid3" style="margin-bottom:12px">
+          <div class="card stat">
+            <div class="stat-label">Outstanding</div>
+            <div class="stat-value">₹1.60 Cr</div>
+            <div class="stat-sub">1,034 invoices · your 4 territories</div>
+          </div>
+          <div class="card stat">
+            <div class="stat-label">Overdue &gt; 90 days</div>
+            <div class="stat-value">₹1.41 Cr</div>
+            <div class="stat-sub">921 invoices · 88.2% of the book</div>
+          </div>
+          <div class="card stat">
+            <div class="stat-label">Collected · Jul 2026</div>
+            <div class="stat-value">₹5.8 L</div>
+            <div class="stat-sub">27 payments · Payment Entry</div>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="card patched">
+            <div class="card-head">
+              <span class="card-title">Ageing buckets</span>
+              <span class="chip chip-warn">will change</span>
+            </div>
+            <div class="card-body">
+              <div class="bars">
+                <div class="bar-col"><span class="bar-val">2.5</span><div class="bar muted" style="height:1.8%"></div></div>
+                <div class="bar-col"><span class="bar-val">5.5</span><div class="bar muted" style="height:3.9%"></div></div>
+                <div class="bar-col"><span class="bar-val">5.9</span><div class="bar muted" style="height:4.2%"></div></div>
+                <div class="bar-col"><span class="bar-val">5.0</span><div class="bar muted" style="height:3.5%"></div></div>
+                <div class="bar-col"><span class="bar-val">141</span><div class="bar" style="height:100%"></div></div>
+              </div>
+              <div class="axis">
+                <div class="bar-label">current</div><div class="bar-label">1–30</div>
+                <div class="bar-label">31–60</div><div class="bar-label">61–90</div>
+                <div class="bar-label">90+</div>
+              </div>
+              <div class="chart-unit">₹ lakh · current state, as of 11 Aug 2026 · <code class="mono">set_filter</code> will re-scope this to FY 2026 due dates</div>
+            </div>
+          </div>
+
+          <div class="card ghost">
+            <div class="card-head">
+              <span class="card-title">Collections forecast · 30 days</span>
+              <span class="chip chip-generated">added by patch</span>
+            </div>
+            <div class="card-body">
+              <div class="bars">
+                <div class="bar-col"><span class="bar-val">4.5</span><div class="bar muted" style="height:77.0%"></div></div>
+                <div class="bar-col"><span class="bar-val">3.7</span><div class="bar muted" style="height:64.2%"></div></div>
+                <div class="bar-col"><span class="bar-val">3.7</span><div class="bar muted" style="height:63.3%"></div></div>
+                <div class="bar-col"><span class="bar-val">5.8</span><div class="bar" style="height:100%"></div></div>
+                <div class="bar-col"><span class="bar-val">4.4</span><div class="bar forecast" style="height:75.8%"></div></div>
+              </div>
+              <div class="axis">
+                <div class="bar-label">Apr</div><div class="bar-label">May</div>
+                <div class="bar-label">Jun</div><div class="bar-label">Jul</div>
+                <div class="bar-label">Aug ƒ</div>
+              </div>
+              <div class="chart-unit">₹ lakh · Apr–Jul actual from <code class="mono">tabPayment Entry</code>;
+                <b>Aug is the forecast operation's output</b></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card removed" style="margin-top:12px">
+          <div class="card-head">
+            <span class="card-title">Top 10 customers by credit limit</span>
+            <span class="chip chip-gray">removed by patch</span>
+          </div>
+          <div class="card-body">
+            <div class="hint">Item <code class="mono">chart_3</code>. The patch removes it because
+              nothing on this dashboard reads credit limit — the agent proposed the removal, the
+              patch records it, and reverting restores it with its layout intact.</div>
+          </div>
+        </div>
+
+        <div class="perm-note" style="margin-top:12px">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-lock"/></svg>
+          <span>508 invoices (₹82.2 L) in <b>Germany</b> and <b>Kenya</b> are outside your territory
+            permissions. The forecast is computed on the permitted frame only — the ML operation
+            inherits the filter rather than re-deriving it.</span>
+        </div>
+
+        <div class="note" style="margin-left:0"><b>Why there is no ML screen.</b> A forecast is
+          operation 5 in the pipeline on the right, beside <code>summarize</code> and
+          <code>join</code> — not a separate endpoint with its own renderer. That is the whole of
+          §4 Move 1: the fork's 147 bespoke <code class="mono">api/ml</code> endpoints collapse into
+          four members of the operation union, and the permission layer, the chart layer and the
+          result cache all apply for free. A dedicated ML surface would be drawing the architecture
+          this design exists to delete.</div>
+      </div>
+    </div>
+
+    <!-- ─── screen: PLUGINS ─── -->
+    <div class="scroll" data-panel="plugins" hidden>
+      <div class="page page-wide">
+        <div class="page-head">
+          <div class="page-title">Plugins</div>
+          <div class="page-desc">MCP servers registered on this space. Client-side transports only —
+            tools run under the asker's Frappe permissions, never the server's.</div>
+        </div>
+
+        <div class="card">
+          <div class="ent">
+            <div class="ent-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-plug"/></svg></div>
+            <div><div class="ent-name">erpnext-docs</div>
+              <div class="ent-meta"><code class="mono">MCPServerStdio</code> · 6 tools · local process</div></div>
+            <div class="ent-right"><span class="chip chip-verified">healthy</span></div>
+          </div>
+          <div class="ent">
+            <div class="ent-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-plug"/></svg></div>
+            <div><div class="ent-name">fx-rates</div>
+              <div class="ent-meta"><code class="mono">MCPServerStreamableHttp</code> · 2 tools · treasury.internal</div></div>
+            <div class="ent-right"><span class="chip chip-verified">healthy</span></div>
+          </div>
+          <div class="ent">
+            <div class="ent-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-plug"/></svg></div>
+            <div><div class="ent-name">shipping-tracker</div>
+              <div class="ent-meta"><code class="mono">MCPServerSse</code> <span class="t-mute">legacy</span> · 4 tools · egress blocked by policy</div></div>
+            <div class="ent-right"><span class="chip chip-warn">disabled</span></div>
+          </div>
+        </div>
+
+        <div class="note" style="margin-left:0"><b>Why this page exists at all.</b> Raven imports OpenAI's
+          <code>HostedMCPTool</code> and then strips it, with every hosted tool, whenever the provider
+          is local (<code>agents_integration.py:349-376</code>) — so Raven has no plugin story on-prem.
+          The same SDK ships three client-side transports (verified: <code>openai-agents 0.18.3</code>);
+          <code class="mono">MCPServerSse</code> is deprecated as of MCP <code>2026-07-28</code>, so the
+          forward set is Stdio + StreamableHttp. The ceiling was an import choice.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ inspector ═══ -->
+  <aside class="inspector" id="inspector">
+    <div class="insp-head">
+      <span class="insp-title">Inspect answer</span>
+      <button class="btn btn-ghost btn-sm" id="insp-close">Close</button>
+    </div>
+    <div class="insp-scroll">
+      <div data-insp="ask">
+
+      <div class="insp-section">
+        <h5>Operation pipeline <button class="btn btn-sm">Edit &amp; re-run</button></h5>
+        <div class="pipe">
+          <div class="op">
+            <div class="op-rail"><div class="op-n">1</div><div class="op-line"></div></div>
+            <div class="op-body">
+              <div class="op-kind">source <span class="op-origin o-ask">from question</span></div>
+              <div class="op-expr">tabSales Invoice</div>
+            </div><span class="op-edit">Edit</span>
+          </div>
+
+          <div class="op">
+            <div class="op-rail"><div class="op-n">2</div><div class="op-line"></div></div>
+            <div class="op-body">
+              <div class="op-kind">filter <span class="op-origin o-model">semantic model</span></div>
+              <div class="op-expr">docstatus == 1</div>
+            </div><span class="op-edit">Edit</span>
+          </div>
+
+          <div class="op">
+            <div class="op-rail"><div class="op-n">3</div><div class="op-line"></div></div>
+            <div class="op-body">
+              <div class="op-kind">filter <span class="op-origin o-model">semantic model</span></div>
+              <div class="op-expr">is_return == 0<br>posting_date &gt;= '2026-01-01'</div>
+            </div><span class="op-edit">Edit</span>
+          </div>
+
+          <div class="op">
+            <div class="op-rail"><div class="op-n">4</div><div class="op-line"></div></div>
+            <div class="op-body">
+              <div class="op-kind">join <span class="op-origin o-link">Link graph</span></div>
+              <div class="op-expr">tabCustomer on customer == name<br>→ territory</div>
+            </div><span class="op-edit">Edit</span>
+          </div>
+
+          <div class="op">
+            <div class="op-rail"><div class="op-n">5</div><div class="op-line"></div></div>
+            <div class="op-body">
+              <div class="op-kind">summarize <span class="op-origin o-ask">from question</span></div>
+              <div class="op-expr">sum(base_net_total) by territory<br>order desc</div>
+            </div><span class="op-edit">Edit</span>
+          </div>
+
+          <div class="op">
+            <div class="op-rail"><div class="op-n"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" style="width:9px;height:9px;stroke-width:2.6"><use href="#i-lock"/></svg></div></div>
+            <div class="op-body">
+              <div class="op-kind">permission filter <span class="op-origin o-perm">injected</span></div>
+              <div class="op-expr">User Permission: Territory in (India,<br>United States) → tree descendants →<br>(Karnataka, Maharashtra, California, Texas)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="insp-section">
+        <h5>Realised SQL — dry run <button class="btn btn-sm">Copy</button></h5>
+        <div class="sql"><span class="c">-- not executed yet · 5 operations compiled</span>
+<span class="k">SELECT</span> c.<span class="n">territory</span>,
+       <span class="k">SUM</span>(si.<span class="n">base_net_total</span>) <span class="k">AS</span> revenue
+<span class="k">FROM</span> <span class="s">"tabSales Invoice"</span> si
+<span class="k">JOIN</span> <span class="s">"tabCustomer"</span> c <span class="k">ON</span> c.name = si.customer
+<span class="k">WHERE</span> si.docstatus = 1
+  <span class="k">AND</span> si.is_return = 0
+  <span class="k">AND</span> si.posting_date &gt;= <span class="s">'2026-01-01'</span>
+  <span class="inj">AND c.territory IN (…4 permitted)</span>
+<span class="k">GROUP BY</span> c.<span class="n">territory</span>
+<span class="k">ORDER BY</span> revenue <span class="k">DESC</span>
+<span class="k">LIMIT</span> 10000</div>
+        <div class="hint" style="margin-top:10px">
+          The highlighted line was <b>injected, not generated</b>. It comes from your Frappe User
+          Permissions, is compiled into the query before execution, and cannot be removed by
+          anything you or the model type into the prompt.
+        </div>
+      </div>
+
+      <div class="insp-section">
+        <h5>Cost &amp; scope</h5>
+        <dl>
+          <div class="kv"><dt>Rows scanned</dt><dd>712</dd></div>
+          <div class="kv"><dt>Rows excluded by permissions</dt><dd style="color: var(--ink-blue-text)">232</dd></div>
+          <div class="kv"><dt>Row cap</dt><dd>10,000</dd></div>
+          <div class="kv"><dt>Query time</dt><dd>0.41s</dd></div>
+          <div class="kv"><dt>Tokens in / out</dt><dd>1,038 / 166</dd></div>
+          <div class="kv"><dt>Cost</dt><dd>$0.0031</dd></div>
+          <div class="kv"><dt>Semantic model</dt><dd class="mono">sm-2026.08.09-a4f1</dd></div>
+        </dl>
+      </div>
+
+      <div class="insp-section" style="border-bottom:none">
+        <h5>Turn log</h5>
+        <div class="hint">Prompt, tool calls, operations, SQL, row count, tokens and cost are
+          persisted per turn on <code class="mono">Nakhoda Query</code>. Retained for audit —
+          this is the artifact, not a scroll-back buffer.</div>
+      </div>
+      </div><!-- /insp ask -->
+
+      <div data-insp="dashboard" hidden>
+
+        <div class="insp-section">
+          <h5>Proposed patch · 3 ops</h5>
+          <div class="patch">
+            <div class="patch-op op-add">
+              <span class="patch-mark">+</span>
+              <div>
+                <div class="op-kind">add_chart <span class="op-origin o-ask">from question</span></div>
+                <div class="op-expr">line · query <code>q_collections</code><br>measure paid_amount · 5 periods<br>layout {x:10, y:0, w:10, h:8}</div>
+              </div>
+            </div>
+            <div class="patch-op op-mod">
+              <span class="patch-mark">~</span>
+              <div>
+                <div class="op-kind">set_filter <span class="op-origin o-ask">from question</span></div>
+                <div class="op-expr">due_date between '2026-04-01'<br>and '2027-03-31' · scopes chart_1</div>
+              </div>
+            </div>
+            <div class="patch-op op-del">
+              <span class="patch-mark">−</span>
+              <div>
+                <div class="op-kind">remove_item <span class="op-origin o-ask">from question</span></div>
+                <div class="op-expr">chart_3 · “Top 10 customers by credit limit”</div>
+              </div>
+            </div>
+          </div>
+          <div class="hint" style="margin-top:10px">Three ops, all members of the closed
+            <code class="mono">DashboardPatch</code> grammar. There is no op that writes a row,
+            alters a schema, or carries SQL — so those requests fail validation before a dry-run
+            is even attempted.</div>
+        </div>
+
+        <div class="insp-section">
+          <h5>Operation pipeline · the forecast</h5>
+          <div class="pipe">
+            <div class="op">
+              <div class="op-rail"><div class="op-n">1</div><div class="op-line"></div></div>
+              <div class="op-body">
+                <div class="op-kind">source <span class="op-origin o-model">semantic model</span></div>
+                <div class="op-expr">tabPayment Entry</div>
+              </div><span class="op-edit">Edit</span>
+            </div>
+            <div class="op">
+              <div class="op-rail"><div class="op-n">2</div><div class="op-line"></div></div>
+              <div class="op-body">
+                <div class="op-kind">filter <span class="op-origin o-model">semantic model</span></div>
+                <div class="op-expr">docstatus == 1</div>
+              </div><span class="op-edit">Edit</span>
+            </div>
+            <div class="op">
+              <div class="op-rail"><div class="op-n">3</div><div class="op-line"></div></div>
+              <div class="op-body">
+                <div class="op-kind">join <span class="op-origin o-link">link graph</span></div>
+                <div class="op-expr">tabCustomer on party == name<br>→ territory</div>
+              </div><span class="op-edit">Edit</span>
+            </div>
+            <div class="op">
+              <div class="op-rail"><div class="op-n"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" style="width:9px;height:9px;stroke-width:2.6"><use href="#i-lock"/></svg></div><div class="op-line"></div></div>
+              <div class="op-body">
+                <div class="op-kind">permission filter <span class="op-origin o-perm">injected</span></div>
+                <div class="op-expr">territory in (Karnataka, Maharashtra,<br>California, Texas)</div>
+              </div>
+            </div>
+            <div class="op">
+              <div class="op-rail"><div class="op-n">4</div><div class="op-line"></div></div>
+              <div class="op-body">
+                <div class="op-kind">summarize <span class="op-origin o-ask">from question</span></div>
+                <div class="op-expr">sum(paid_amount) by month</div>
+              </div><span class="op-edit">Edit</span>
+            </div>
+            <div class="op">
+              <div class="op-rail"><div class="op-n">5</div></div>
+              <div class="op-body">
+                <div class="op-kind">forecast <span class="op-origin o-ask">from question</span></div>
+                <div class="op-expr">column paid_amount · date_column posting_date<br>periods 30 · method auto · confidence 0.95</div>
+              </div><span class="op-edit">Edit</span>
+            </div>
+          </div>
+          <div class="hint" style="margin-top:10px">
+            <b>Step 5 is the entire ML integration.</b> <code class="mono">forecast</code> is a member
+            of the same operation union as <code>summarize</code> and <code>join</code> — so it
+            inherits the permission filter at step 4, renders in a stock chart, and caches under the
+            existing <code class="mono">query_results</code> key. It is the one deliberate pipeline
+            break: ibis cannot express Holt-Winters, so the operation materialises the upstream frame
+            under the row cap and hands it to statsmodels.
+          </div>
+        </div>
+
+        <div class="insp-section">
+          <h5>Realised SQL — dry run <button class="btn btn-sm">Copy</button></h5>
+          <div class="sql"><span class="c">-- not executed yet · 4 operations compiled</span>
+<span class="c">-- step 5 (forecast) runs on the returned frame</span>
+<span class="k">SELECT</span> <span class="k">date_trunc</span>(<span class="s">'month'</span>, pe.<span class="n">posting_date</span>) <span class="k">AS</span> period,
+       <span class="k">SUM</span>(pe.<span class="n">paid_amount</span>) <span class="k">AS</span> collected
+<span class="k">FROM</span> <span class="s">"tabPayment Entry"</span> pe
+<span class="k">JOIN</span> <span class="s">"tabCustomer"</span> c <span class="k">ON</span> c.name = pe.party
+<span class="k">WHERE</span> pe.docstatus = 1
+  <span class="inj">AND c.territory IN (…4 permitted)</span>
+<span class="k">GROUP BY</span> 1 <span class="k">ORDER BY</span> 1
+<span class="k">LIMIT</span> 10000</div>
+          <div class="hint" style="margin-top:10px">The dry-run compiles and shows the SQL without
+            executing it. The forecast never sees a row your permissions removed, because the filter
+            is injected upstream of the materialisation — not applied to the model's output.</div>
+        </div>
+
+        <div class="insp-section" style="border-bottom:none">
+          <h5>Apply</h5>
+          <dl>
+            <div class="kv"><dt>Validation</dt><dd style="color: var(--ink-green-text)">3 / 3 ops valid</dd></div>
+            <div class="kv"><dt>Dry run</dt><dd style="color: var(--ink-green-text)">compiled, not executed</dd></div>
+            <div class="kv"><dt>Applies as</dt><dd class="mono">v7</dd></div>
+            <div class="kv"><dt>Revert restores</dt><dd class="mono">v6 · 9 Aug 2026</dd></div>
+            <div class="kv"><dt>Tokens in / out</dt><dd>2,140 / 318</dd></div>
+          </dl>
+          <div class="patch-actions">
+            <button class="btn btn-sm">Reject</button>
+            <button class="btn btn-sm btn-primary">Approve &amp; apply</button>
+          </div>
+          <div class="hint" style="margin-top:12px">Nothing is written until you approve, and the
+            approval is recorded with the patch on <code class="mono">Nakhoda Dashboard Version</code>.
+            This is the same approval surface a plugin uses when it returns
+            <code class="mono">input_required</code> — with a different origin badge, so a third-party
+            prompt can never be mistaken for Nakhoda's own.</div>
+        </div>
+
+      </div><!-- /insp dashboard -->
+
+    </div>
+  </aside>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+// screen switcher
+const INSPECTABLE = { ask: 'Inspect answer', dashboard: 'Review patch' };
+$$('.nav-item').forEach(b => b.onclick = () => {
+  $$('.nav-item').forEach(x => x.setAttribute('aria-current', String(x === b)));
+  const s = b.dataset.screen;
+  $$('[data-panel]').forEach(p => p.hidden = p.dataset.panel !== s);
+  $('.crumb').innerHTML = b.textContent.replace(/\d[\d.%]*$/, '').trim() +
+    (s === 'ask' ? ' <b>· Q3 review</b>' : s === 'dashboard' ? ' <b>· Receivables health</b>' : '');
+  $$('[data-insp]').forEach(p => p.hidden = p.dataset.insp !== s);
+  $('.insp-title').textContent = INSPECTABLE[s] || '';
+  $('#inspector').hidden = !(s in INSPECTABLE);
+});
+
+// inspector
+const insp = $('#inspector');
+$('#insp-toggle').onclick = () => insp.hidden = !insp.hidden;
+$('#insp-close').onclick = () => insp.hidden = true;
+$$('[data-open-insp]').forEach(b => b.onclick = () => insp.hidden = false);
+
+// theme
+$('#theme').onclick = () => {
+  const r = document.documentElement;
+  r.dataset.theme = r.dataset.theme === 'dark' ? 'light' : 'dark';
+};
+
+// annotations
+$('#annot').onclick = e => {
+  document.body.classList.toggle('clean');
+  e.target.textContent = document.body.classList.contains('clean') ? 'Show notes' : 'Hide notes';
+};
+</script>
+</body>
+</html>

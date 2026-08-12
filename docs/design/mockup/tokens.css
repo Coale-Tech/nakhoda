@@ -1,0 +1,119 @@
+/* Espresso design tokens — verbatim from
+   kimcov16/apps/frappe/frappe/public/scss/espresso/{_colors,_borders,_shadows,_typography}.scss
+   Only the subset this mockup uses. Do not hand-tune: these are the shipped values. */
+
+@font-face {
+  font-family: InterVariable;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./InterVariable.woff2") format("woff2");
+}
+
+:root {
+  /* --- ink (text / icon) --- */
+  --ink-gray-1: #ededed;  --ink-gray-2: #e2e2e2;  --ink-gray-3: #c7c7c7;
+  --ink-gray-4: #999999;  --ink-gray-5: #7c7c7c;  --ink-gray-6: #525252;
+  --ink-gray-7: #525252;  --ink-gray-8: #383838;  --ink-gray-9: #171717;
+  --ink-blue-2: #0289f7;  --ink-blue-3: #007be0;
+  --ink-green-2: #46b37e; --ink-green-3: #278f5e;
+  --ink-amber-2: #e79913; --ink-amber-3: #db7706;
+  --ink-red-3:  #e03636;  --ink-red-4:  #cc2929;
+
+  /* --- semantic text roles ---
+     Espresso's light ramp jumps straight from gray-5 (#7c7c7c, 4.17:1 on white -
+     fails WCAG AA for body text by 0.33) to gray-6 (#525252, 7.81:1). There is no
+     compliant step between them, so both secondary and tertiary text resolve to
+     gray-6 and the hierarchy is carried by size and weight instead of value. */
+  --text-secondary: var(--ink-gray-6);
+  --text-tertiary:  var(--ink-gray-6);
+
+  /* Chromatic text on light surfaces. Espresso's light ink ramp has NO chromatic
+     value that clears 4.5:1 on white - blue-3 tops out at 4.28, green-3 at 4.06,
+     amber-3 at 3.16. These are the minimum darkenings that clear AA against every
+     light surface the text actually lands on - white, gray-1, and the -1/-2 tints
+     used by chips and badges (the tinted chip is always the binding constraint at
+     4.53). Hue and saturation are held byte-identical to the espresso source; only
+     HSL lightness moves. TEXT only - backgrounds, borders and fills stay on the
+     shipped -2/-3 values. See 14-frontend-design.md §4. */
+  --ink-blue-text:  #006fcb;  /* from #007be0, L .439 -> .397 | 5.08 white .. 4.53 blue-2  */
+  --ink-green-text: #237f53;  /* from #278f5e, L .357 -> .317 | 4.96 white .. 4.53 green-2 */
+  --ink-amber-text: #ab5d05;  /* from #db7706, L .441 -> .345 | 4.88 white .. 4.53 amber-2 */
+
+  /* --- surface (background / fill) --- */
+  --surface-white: #ffffff;
+  --surface-gray-1: #f8f8f8; --surface-gray-2: #f3f3f3; --surface-gray-3: #ededed;
+  --surface-gray-4: #e2e2e2; --surface-gray-5: #525252; --surface-gray-6: #383838;
+  --surface-gray-7: #171717;
+  --surface-blue-1: #f2f9ff;  --surface-blue-2: #e6f4ff;  --surface-blue-3: #007be0;
+  --surface-green-1: #f2fdf4; --surface-green-2: #e4faeb; --surface-green-3: #278f5e;
+  --surface-amber-1: #fdfaed; --surface-amber-2: #fff7d3; --surface-amber-3: #db7706;
+  --surface-red-1: #fff7f7;   --surface-red-2: #ffe7e7;   --surface-red-5: #cc2929;
+  --surface-cards: #ffffff;   --surface-modal: #ffffff;
+
+  /* --- outline (border / ring) --- */
+  --outline-gray-1: #ededed; --outline-gray-2: #e2e2e2; --outline-gray-3: #c7c7c7;
+  --outline-gray-4: #999999; --outline-gray-5: #383838;
+  --outline-blue-1: #a7d7fd; --outline-green-1: #a6efc0;
+  --outline-amber-1: #fbdb73; --outline-amber-2: #fbcc55; --outline-red-1: #fdc2c2;
+
+  /* --- type --- */
+  --font-stack: "InterVariable", "Inter", -apple-system, BlinkMacSystemFont,
+                "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, monospace;
+  --text-tiny: 11px; --text-xs: 12px; --text-sm: 13px; --text-base: 14px;
+  --text-lg: 16px; --text-xl: 18px; --text-2xl: 20px; --text-3xl: 24px;
+  --text-5xl: 32px; --text-7xl: 40px;
+  --weight-regular: 420; --weight-medium: 500; --weight-semibold: 600; --weight-bold: 700;
+
+  /* --- radii --- */
+  --border-radius-tiny: 4px; --border-radius-sm: 8px; --border-radius: 8px;
+  --border-radius-md: 10px; --border-radius-lg: 12px; --border-radius-xl: 16px;
+  --border-radius-2xl: 20px; --border-radius-full: 999px;
+
+  /* --- shadows --- */
+  --shadow-xs: 0px 1px 2px rgba(0,0,0,.04);
+  --shadow-sm: 0px 1px 2px rgba(0,0,0,.06), 0px 1px 3px rgba(0,0,0,.04);
+  --shadow-md: 0px 4px 8px rgba(0,0,0,.06), 0px 2px 4px rgba(0,0,0,.04);
+  --shadow-lg: 0px 12px 24px rgba(0,0,0,.08), 0px 4px 8px rgba(0,0,0,.04);
+}
+
+[data-theme="dark"] {
+  --ink-gray-1: #232323;  --ink-gray-2: #424242;  --ink-gray-3: #616161;
+  --ink-gray-4: #808080;  --ink-gray-5: #a8a8a8;  --ink-gray-6: #c4c4c4;
+  --ink-gray-7: #d4d4d4;  --ink-gray-8: #e2e2e2;  --ink-gray-9: #f8f8f8;
+  --ink-blue-2: #3294e3;  --ink-blue-3: #5faee9;
+  --ink-green-2: #1ba964; --ink-green-3: #37c17c;
+  --ink-amber-2: #e37d00; --ink-amber-3: #f0a02c;
+  --ink-red-3: #e43838;   --ink-red-4: #ef5a5a;
+
+  /* dark: gray-5 (#a8a8a8) already clears AA on these surfaces, but keeping the
+     roles pinned to gray-6 holds both themes on one rule. */
+  --text-secondary: var(--ink-gray-6);
+  --text-tertiary:  var(--ink-gray-6);
+
+  /* dark needs no darkening - the light-on-dark chromatic values already clear AA
+     (audited: zero chromatic failures in dark), so these stay on shipped espresso. */
+  --ink-blue-text:  var(--ink-blue-3);
+  --ink-green-text: var(--ink-green-3);
+  --ink-amber-text: var(--ink-amber-3);
+
+  --surface-white: #0f0f0f;
+  --surface-gray-1: #232323; --surface-gray-2: #2b2b2b; --surface-gray-3: #343434;
+  --surface-gray-4: #424242; --surface-gray-5: #afafaf; --surface-gray-6: #d4d4d4;
+  --surface-gray-7: #f8f8f8;
+  --surface-blue-1: #0e2037;  --surface-blue-2: #052b53;  --surface-blue-3: #3294e3;
+  --surface-green-1: #0b2e1c; --surface-green-2: #0a3f27; --surface-green-3: #1ba964;
+  --surface-amber-1: #371e06; --surface-amber-2: #4b2606; --surface-amber-3: #e37d00;
+  --surface-red-1: #361515;   --surface-red-2: #521515;   --surface-red-5: #e43838;
+  --surface-cards: #1c1c1c;   --surface-modal: #232323;
+
+  --outline-gray-1: #232323; --outline-gray-2: #343434; --outline-gray-3: #424242;
+  --outline-gray-4: #808080; --outline-gray-5: #c7c7c7;
+  --outline-blue-1: #052b53; --outline-green-1: #0a3f27;
+  --outline-amber-1: #4b2606; --outline-amber-2: #603007; --outline-red-1: #521515;
+
+  --shadow-sm: 0px 1px 2px rgba(0,0,0,.5), 0px 1px 3px rgba(0,0,0,.3);
+  --shadow-md: 0px 4px 8px rgba(0,0,0,.5), 0px 2px 4px rgba(0,0,0,.3);
+  --shadow-lg: 0px 12px 24px rgba(0,0,0,.6), 0px 4px 8px rgba(0,0,0,.4);
+}
