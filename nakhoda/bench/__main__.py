@@ -22,15 +22,46 @@ from pathlib import Path
 from nakhoda.bench import driver
 from nakhoda.bench import grade as grading
 
-FIXTURE_DIR = Path("/tmp/semantic-bench")
-BENCH_DIR = Path(__file__).resolve().parent.parent / "tests" / "semantic_bench"
+#: The published run and the Phase 2b run, each with everything that must agree
+#: with it. They are named rather than assembled from flags because a question
+#: set, its contexts and its database are one object: grading `full` questions
+#: against the `frozen` fixture is not a configuration, it is a mistake.
+#:
+#: `frozen` reads its contexts from disk instead of generating them. It is the
+#: 40 questions behind the published 95.8% and it is replayed, never rebuilt -
+#: regenerating a context that a committed baseline was produced against would
+#: silently retire the baseline.
+FROZEN_DIR = Path(__file__).resolve().parent.parent / "tests" / "semantic_bench"
 CONTEXT_FILES = {"A_raw": "context_a.txt", "B_semantic": "context_b.txt"}
+FIXTURES = {"frozen": Path("/tmp/semantic-bench"), "full": Path("/tmp/nakhoda-fixture")}
+REBUILD = {
+	"frozen": "python -m nakhoda.tests.semantic_bench.build",
+	"full": "python -m nakhoda.bench.fixture",
+}
 
 
-def _questions() -> list[dict]:
-	from nakhoda.tests.semantic_bench.questions import Q
+def _questions(which: str) -> list[dict]:
+	if which == "frozen":
+		from nakhoda.tests.semantic_bench.questions import Q
+
+		return Q
+	from nakhoda.bench.questions import Q
 
 	return Q
+
+
+def _contexts(which: str, arms: tuple[str, ...]) -> dict[str, str]:
+	if which == "frozen":
+		return {arm: (FROZEN_DIR / CONTEXT_FILES[arm]).read_text() for arm in arms}
+	from nakhoda.bench import fixture
+
+	return {arm: text for arm, text in fixture.contexts().items() if arm in arms}
+
+
+def _ordered(which: str) -> frozenset[str]:
+	if which == "frozen":
+		return grading.ORDERED
+	return frozenset(q["id"] for q in _questions(which) if q.get("ordered"))
 
 
 def _csv(value: str) -> tuple[str, ...]:
@@ -40,11 +71,11 @@ def _csv(value: str) -> tuple[str, ...]:
 def cmd_plan(args) -> int:
 	run = Path(args.run)
 	run.mkdir(parents=True, exist_ok=True)
-	contexts = {arm: (BENCH_DIR / CONTEXT_FILES[arm]).read_text() for arm in args.arms}
-	rows = driver.plan(_questions(), contexts, targets=args.targets, tiers=args.tiers)
+	contexts = _contexts(args.set, args.arms)
+	rows = driver.plan(_questions(args.set), contexts, targets=args.targets, tiers=args.tiers)
 	driver.write_jsonl(run / "prompts.jsonl", rows)
 	print(f"{len(rows)} prompts -> {run / 'prompts.jsonl'}")
-	print(f"  arms {list(contexts)}  targets {list(args.targets)}  tiers {list(args.tiers)}")
+	print(f"  set {args.set}  arms {list(contexts)}  targets {list(args.targets)}  tiers {list(args.tiers)}")
 	return 0
 
 
@@ -71,16 +102,16 @@ def cmd_grade(args) -> int:
 	import ibis
 
 	run = Path(args.run)
-	fixture = Path(args.fixture) / "erp.duckdb"
+	fixture = Path(args.fixture or FIXTURES[args.set]) / "erp.duckdb"
 	if not fixture.exists():
-		sys.exit(f"no fixture at {fixture}: run python -m nakhoda.tests.semantic_bench.build")
+		sys.exit(f"no fixture at {fixture}: run {REBUILD[args.set]}")
 
 	records = driver.read_jsonl(run / "completions.jsonl")
 	con = duckdb.connect(str(fixture), read_only=True)
 	ibis_con = ibis.duckdb.connect(str(fixture), read_only=True)
-	gold = {q["id"]: con.execute(q["sql"]).df() for q in _questions()}
+	gold = {q["id"]: con.execute(q["sql"]).df() for q in _questions(args.set)}
 
-	graded = grading.grade(records, gold, con, ibis_con.table)
+	graded = grading.grade(records, gold, con, ibis_con.table, ordered_ids=_ordered(args.set))
 	(run / "graded.json").write_text(json.dumps(graded, indent=1))
 	report(graded)
 	return 0
@@ -101,6 +132,9 @@ def report(graded: list[dict]) -> None:
 			print(f"\n=== {arm} / {target} ===")
 			for tier in tiers:
 				rows = sel(arm=arm, target=target, tier=tier)
+				if not rows:
+					print(f"  {tier:<10} {'-':>3}      not run")
+					continue
 				k = sum(r["status"] == "pass" for r in rows)
 				print(f"  {tier:<10} {k:>3}/{len(rows):<4} {100 * k / len(rows):5.1f}%")
 			k = sum(r["status"] == "pass" for r in cells)
@@ -129,11 +163,14 @@ def report(graded: list[dict]) -> None:
 			label = f"{targets[0]}: {left_arm} vs {right_arm}"
 		if not left or not right:
 			continue
-		b, c = grading.discordant(left, right)
+		b, c, n = grading.paired(left, right)
 		lk, rk = (sum(r["status"] == "pass" for r in x) for x in (left, right))
 		print(f"\n=== {label} ===")
+		if not n:
+			print(f"  {lk}/{len(left)} vs {rk}/{len(right)}   no shared questions: not paired")
+			continue
 		print(
-			f"  {lk}/{len(left)} vs {rk}/{len(right)}   discordant {b}/{c}"
+			f"  {lk}/{len(left)} vs {rk}/{len(right)}   {n} pairs, discordant {b}/{c}"
 			f"   McNemar exact p = {grading.mcnemar_exact(b, c):.3g}"
 		)
 
@@ -141,6 +178,7 @@ def report(graded: list[dict]) -> None:
 def main(argv: list[str] | None = None) -> int:
 	parser = argparse.ArgumentParser(prog="nakhoda.bench")
 	parser.add_argument("--run", default="/tmp/nakhoda-bench", help="run directory")
+	parser.add_argument("--set", choices=tuple(FIXTURES), default="frozen", help="question set")
 	sub = parser.add_subparsers(dest="cmd", required=True)
 
 	p = sub.add_parser("plan")
@@ -156,7 +194,7 @@ def main(argv: list[str] | None = None) -> int:
 	p.set_defaults(fn=cmd_run)
 
 	p = sub.add_parser("grade")
-	p.add_argument("--fixture", default=str(FIXTURE_DIR))
+	p.add_argument("--fixture", help="database to grade against; defaults to the set's")
 	p.set_defaults(fn=cmd_grade)
 
 	args = parser.parse_args(argv)

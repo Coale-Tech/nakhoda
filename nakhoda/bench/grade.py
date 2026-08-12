@@ -95,8 +95,15 @@ def execute(record: dict, con, resolve) -> tuple[Any, str | None]:
 		return None, f"{type(e).__name__}: {str(e)[:90]}"
 
 
-def grade(records: list[dict], gold: dict, con, resolve) -> list[dict]:
-	"""Status per record. `gold` maps question id to its gold dataframe."""
+def grade(
+	records: list[dict], gold: dict, con, resolve, *, ordered_ids: frozenset[str] = ORDERED
+) -> list[dict]:
+	"""Status per record. `gold` maps question id to its gold dataframe.
+
+	`ordered_ids` defaults to the frozen forty's set so a replay of the published
+	run scores identically without being asked to. A larger question set carries
+	its own flag per question and passes it here.
+	"""
 	out = []
 	for r in records:
 		row = {k: r[k] for k in ("qid", "arm", "target", "tier")}
@@ -114,7 +121,7 @@ def grade(records: list[dict], gold: dict, con, resolve) -> list[dict]:
 			out.append({**row, "status": "wrong_shape", "detail": f"{df.shape[1]} cols vs {gd.shape[1]}"})
 			continue
 
-		ordered = r["qid"] in ORDERED
+		ordered = r["qid"] in ordered_ids
 		ok, why = match(df, gd, ordered)
 		if ok:
 			out.append({**row, "status": "pass", "detail": ""})
@@ -152,9 +159,14 @@ def mcnemar_exact(b: int, c: int) -> float:
 	return min(1.0, 2 * tail)
 
 
-def discordant(left: list[dict], right: list[dict]) -> tuple[int, int]:
-	"""(left passed and right failed, right passed and left failed), paired on
-	question and tier."""
+def paired(left: list[dict], right: list[dict]) -> tuple[int, int, int]:
+	"""(left passed and right failed, right passed and left failed, pairs), on
+	question and tier.
+
+	The pair count is returned rather than assumed because two cells that share
+	no question yield no discordant pairs, and `mcnemar_exact(0, 0)` is 1.0 -
+	indistinguishable, in a printed table, from two cells that agree perfectly.
+	"""
 
 	def index(rows):
 		return {(r["qid"], r["tier"]): r["status"] == "pass" for r in rows}
@@ -164,4 +176,5 @@ def discordant(left: list[dict], right: list[dict]) -> tuple[int, int]:
 	return (
 		sum(1 for k in shared if a[k] and not b[k]),
 		sum(1 for k in shared if b[k] and not a[k]),
+		len(shared),
 	)

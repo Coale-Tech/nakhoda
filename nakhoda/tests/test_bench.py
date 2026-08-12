@@ -113,7 +113,8 @@ class Grader(unittest.TestCase):
 
 	def test_mcnemar_reproduces_the_published_p(self):
 		"""p = 1.9e-05, on the same discordant pairs."""
-		b, c = grading.discordant(self._cell(arm="B_semantic"), self._cell(arm="A_raw"))
+		b, c, n = grading.paired(self._cell(arm="B_semantic"), self._cell(arm="A_raw"))
+		self.assertEqual(n, 120)
 		self.assertAlmostEqual(grading.mcnemar_exact(b, c), 1.9e-05, places=6)
 
 	def test_gold_pipelines_grade_as_pass(self):
@@ -261,7 +262,8 @@ class Baseline(unittest.TestCase):
 		nothing against the one the benchmark measured."""
 		sql = [r for r in self.graded if r["target"] == "sql"]
 		ops = [r for r in self.graded if r["target"] == "ops"]
-		b, c = grading.discordant(ops, sql)
+		b, c, n = grading.paired(ops, sql)
+		self.assertEqual(n, 120)
 		self.assertGreater(grading.mcnemar_exact(b, c), 0.05)
 
 	def test_accuracy_clears_the_phase_2_gate(self):
