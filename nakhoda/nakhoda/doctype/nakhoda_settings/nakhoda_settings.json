@@ -1,0 +1,109 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-12 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "model_section",
+  "model_provider",
+  "model",
+  "token_budget",
+  "limits_section",
+  "max_rows",
+  "cache_ttl",
+  "permissions_section",
+  "strict_columns"
+ ],
+ "fields": [
+  {
+   "fieldname": "model_section",
+   "fieldtype": "Section Break",
+   "label": "Model"
+  },
+  {
+   "default": "Anthropic",
+   "fieldname": "model_provider",
+   "fieldtype": "Select",
+   "label": "Model Provider",
+   "options": "OpenAI\nAnthropic\nOpenRouter\nLocal"
+  },
+  {
+   "description": "Provider-specific model id. Recorded on every Agent Run so an answer can be reproduced.",
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "label": "Model"
+  },
+  {
+   "default": "120000",
+   "description": "Ceiling on semantic context sent with one question. The 529-DocType ERPNext schema renders to ~91,735 tokens, so retrieval must prune below this.",
+   "fieldname": "token_budget",
+   "fieldtype": "Int",
+   "label": "Token Budget Per Question"
+  },
+  {
+   "fieldname": "limits_section",
+   "fieldtype": "Section Break",
+   "label": "Limits"
+  },
+  {
+   "default": "100000",
+   "description": "Hard cap applied to every result, after permissions.",
+   "fieldname": "max_rows",
+   "fieldtype": "Int",
+   "label": "Max Rows Returned"
+  },
+  {
+   "default": "3600",
+   "fieldname": "cache_ttl",
+   "fieldtype": "Int",
+   "label": "Result Cache TTL (Seconds)"
+  },
+  {
+   "fieldname": "permissions_section",
+   "fieldtype": "Section Break",
+   "label": "Permissions"
+  },
+  {
+   "default": "0",
+   "description": "Off: a pipeline naming a column the viewer cannot read has that column dropped. On: it raises. Either way the column is never returned.\n\nThere is deliberately no switch here for user permissions themselves. They are injected by the resolver that builds every pipeline, so turning them off is not a setting - it would be a different program.",
+   "fieldname": "strict_columns",
+   "fieldtype": "Check",
+   "label": "Fail On Unreadable Columns"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-08-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nakhoda",
+ "name": "Nakhoda Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda Admin",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

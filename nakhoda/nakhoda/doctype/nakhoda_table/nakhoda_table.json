@@ -1,0 +1,144 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "hash",
+ "creation": "2026-08-12 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "data_source",
+  "table_name",
+  "document_type",
+  "label",
+  "is_child_table",
+  "sync_section",
+  "stored_in_warehouse",
+  "sync_state",
+  "row_count",
+  "last_synced",
+  "sync_error"
+ ],
+ "fields": [
+  {
+   "fieldname": "data_source",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Data Source",
+   "options": "Nakhoda Data Source",
+   "reqd": 1
+  },
+  {
+   "description": "Physical table, e.g. `tabSales Invoice`.",
+   "fieldname": "table_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Table Name",
+   "reqd": 1
+  },
+  {
+   "description": "The DocType this table backs, when it backs one.",
+   "fieldname": "document_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "DocType",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "label": "Label"
+  },
+  {
+   "default": "0",
+   "description": "Child rows are readable exactly when their parent row is, so these are filtered at the parent's grain.",
+   "fieldname": "is_child_table",
+   "fieldtype": "Check",
+   "label": "Child Table"
+  },
+  {
+   "fieldname": "sync_section",
+   "fieldtype": "Section Break",
+   "label": "Warehouse"
+  },
+  {
+   "default": "0",
+   "fieldname": "stored_in_warehouse",
+   "fieldtype": "Check",
+   "label": "Stored In Warehouse"
+  },
+  {
+   "default": "Never",
+   "fieldname": "sync_state",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Sync State",
+   "options": "Never\nSyncing\nSynced\nFailed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "row_count",
+   "fieldtype": "Int",
+   "label": "Rows",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_synced",
+   "fieldtype": "Datetime",
+   "label": "Last Synced",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sync_error",
+   "fieldtype": "Small Text",
+   "label": "Last Sync Error",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nakhoda",
+ "name": "Nakhoda Table",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda User",
+   "share": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "table_name"
+}

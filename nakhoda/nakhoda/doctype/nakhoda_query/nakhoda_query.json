@@ -1,0 +1,132 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "hash",
+ "creation": "2026-08-12 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "data_source",
+  "operations",
+  "execution_section",
+  "cache_key",
+  "last_row_count",
+  "last_execution_time",
+  "last_executed_on",
+  "last_executed_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "data_source",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Data Source",
+   "options": "Nakhoda Data Source",
+   "reqd": 1
+  },
+  {
+   "description": "The pipeline, as a JSON list. Validated against the closed operation grammar on save, so a malformed query cannot be stored.",
+   "fieldname": "operations",
+   "fieldtype": "JSON",
+   "label": "Operations",
+   "reqd": 1
+  },
+  {
+   "fieldname": "execution_section",
+   "fieldtype": "Section Break",
+   "label": "Last Execution"
+  },
+  {
+   "description": "Digest of the compiled SQL and the backend it ran against. Permissions compile into that SQL, so two viewers with different access cannot share an entry.",
+   "fieldname": "cache_key",
+   "fieldtype": "Data",
+   "label": "Cache Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_row_count",
+   "fieldtype": "Int",
+   "label": "Rows Returned",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_execution_time",
+   "fieldtype": "Float",
+   "label": "Execution Time (Seconds)",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_executed_on",
+   "fieldtype": "Datetime",
+   "label": "Last Executed",
+   "read_only": 1
+  },
+  {
+   "description": "Whose permissions produced the cache key above. Two viewers with different access run different SQL, so this field names the run, not the query.",
+   "fieldname": "last_executed_by",
+   "fieldtype": "Link",
+   "label": "Last Executed By",
+   "options": "User",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nakhoda",
+ "name": "Nakhoda Query",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title"
+}
