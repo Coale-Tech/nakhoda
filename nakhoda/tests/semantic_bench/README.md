@@ -20,18 +20,25 @@ mechanically derived from DocType metadata improve NL2SQL over raw DDL?
 
 ## Reproducing
 
-Requires `duckdb`. Verified against `/Users/mac/ERPNext/nvumabaranda/env` (duckdb 1.4.5).
+Requires `duckdb`, and an **ERPNext v16.29.0** checkout - the DocTypes the contexts
+were derived from. That version is a pin, not a detail: ERPNext v15 moves 22 fields
+across these eight DocTypes, so a rebuild on another release produces a different
+`context_b.txt` and measures the release rather than the layer.
 
 ```sh
-mkdir -p /tmp/semantic-bench
-cp questions.py generated.json grade.py /tmp/semantic-bench/
-python build.py     # ~6m40s — writes erp.duckdb + context_{a,b}.txt to /tmp/semantic-bench
-cd /tmp/semantic-bench && python grade.py
+python -m nakhoda.tests.semantic_bench.build     # ~6m40s -> $SEMANTIC_BENCH_OUT
+python -m nakhoda.tests.semantic_bench.grade
 ```
 
-`build.py` reads DocType JSON from hardcoded `ERP` / `FRP` paths at `build.py:11-12`
-(`kimcov16` bench) and writes to `BENCH = /tmp/semantic-bench` (`:13`). Edit those three
-lines to relocate.
+Both resolve `apps/erpnext` and `apps/frappe` from the bench this app is installed
+in, and write to `/tmp/semantic-bench`. Override with `SEMANTIC_BENCH_ERPNEXT`,
+`SEMANTIC_BENCH_FRAPPE`, `SEMANTIC_BENCH_OUT`.
+
+Three changes were made when this was vendored, and no others: paths resolved
+instead of hardcoded to one workstation, an import guard so that test discovery
+cannot trigger a six-minute destructive rebuild, and `grade.py` reading
+`questions.py` from beside itself. The scripts are excluded from `ruff` - their
+value is that they reproduce byte-identical, which reformatting would trade away.
 
 **Audited 2026-08-12.** Fixture rebuilt from scratch: `context_a.txt` and `context_b.txt`
 came out md5-identical to the committed copies, and re-grading `generated.json` against the
@@ -47,7 +54,15 @@ three per-model rows, all eight trap rows, and the failure-mode split (A_raw 94 
 2. **40 questions, not the >=200 the literature recommends** (`10-eval-methodology.md` §4).
    The headline delta clears significance anyway; the per-trap cells (n = 2-8) are
    indicative only.
-3. **No `__main__` guard, no CLI.** Both scripts execute at module top level.
-4. **Contamination cuts one way.** Frontier models score 95.0% on *raw* ERPNext DDL because
+3. **One phantom column in Arm B.** `context_b.txt` lists `image_view VARCHAR` on
+   Sales Invoice Item. It is an `Image` field - a widget that re-renders another
+   column - and has no column of its own; the harness' own Arm A DDL omits it.
+   The 95.8% was therefore scored against a schema advertising one column that did
+   not exist. `nakhoda/semantic/model.py` filters on Frappe's `data_fieldtypes`
+   allow-list and drops it, which is the single line by which the shipped generator
+   differs from this artifact - asserted in `test_semantic.py`, not tolerated.
+4. **Scripts, not modules.** Both run at import, so both now refuse to be imported.
+   Neither has a CLI beyond the env vars above.
+5. **Contamination cuts one way.** Frontier models score 95.0% on *raw* ERPNext DDL because
    they recognise `tabSales Invoice` from pretraining. The measured lift therefore
    **understates** the effect for custom DocTypes, which appear in no training corpus.

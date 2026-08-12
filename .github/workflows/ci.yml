@@ -46,6 +46,36 @@ jobs:
           python -m nakhoda.tests.clean_room
           python -m unittest nakhoda.tests.test_clean_room -v
 
+  # Gate A. The research measured a text file; this proves the shipped generator
+  # still produces it. Pinned to the ERPNext the artifact was derived from, because
+  # a different release moves fields and the diff would measure ERPNext, not us.
+  semantic:
+    name: Semantic layer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: nakhoda }
+
+      - uses: actions/checkout@v4
+        with:
+          repository: frappe/erpnext
+          ref: v16.29.0
+          path: erpnext
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+
+      # No pip install: the generator imports nothing outside the standard library,
+      # which is what lets this gate run in seconds against a bare checkout. The
+      # one thing it borrows from Frappe - the fieldtype allow-list - is pinned by
+      # `test_semantic_live.py` on a real bench instead.
+      - name: Gate A
+        working-directory: nakhoda
+        env:
+          SEMANTIC_BENCH_ERPNEXT: ${{ github.workspace }}/erpnext
+        run: python -m unittest nakhoda.tests.test_semantic -v
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
