@@ -299,6 +299,40 @@ Seeded from `semantic-bench/`, which reproduced exactly on a from-scratch rebuil
 > [arXiv:2601.08778](https://arxiv.org/abs/2601.08778) documents 52.8%/62.8% annotation
 > error rates in the public benchmarks.
 
+**2a done, 2026-08-12.** `nakhoda/bench/` — three stages joined by files, because
+only the middle one needs a model and only the outer two need a database:
+
+```
+plan   questions x arms x targets -> prompts.jsonl      the app
+run    prompts.jsonl              -> completions.jsonl  a model
+grade  completions.jsonl          -> graded.json        the fixture
+```
+
+The seam is the fix for how the first driver was lost: it ran inside a session and
+never touched disk. A file between stages makes that impossible, and lets generation
+happen in another interpreter or on another machine — which it must, since the
+grammar spec needs ibis and generation needs only text and a network.
+
+Prompts are content-addressed. `run --models replay` serves recorded completions
+keyed by prompt hash, so CI re-grades 240 real generations for nothing on every
+commit, and a changed prompt fails loudly instead of inheriting a stale answer.
+Editing the grammar by one word invalidated exactly the 120 `ops` prompts and left
+the 120 `sql` ones replaying untouched.
+
+**The gate is met on both targets: 112/120 = 93.3%, CI [87.4, 96.6], against ≥90.6%.**
+SQL and Operation JSON are dead level, McNemar p = 1.00 (`10-eval-methodology.md`
+§10), so §6.2's first non-negotiable costs nothing. The driver reproduces the frozen
+arm B — 112 vs 115, p = 0.453 — which is what makes the comparison legitimate.
+
+One correction to this plan's framing. §9's risk 3 — models have zero exposure to the
+operation grammar — showed up on the first run as −11.7 pp, p = 0.0043, and it was not
+model competence. Fifteen of twenty-two failures were a single undocumented
+constraint: `join` rejects a selection whose name is already in scope, which the
+engine enforces by design and the prompt had never mentioned. Stating it closed the
+entire gap. The lesson generalises past this benchmark: for a closed grammar the
+accuracy risk lives in **prompt completeness**, and it is a build-time defect, found
+once and fixed once — not a per-question tax.
+
 ### Phase 3 — Verified queries
 `Nakhoda Verified Query` + approval workflow.
 

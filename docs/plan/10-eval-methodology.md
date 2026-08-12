@@ -235,3 +235,53 @@ same 40 questions against arm B, and report the delta. One extra arm, no new que
 new gold data — it reuses everything. If Operation JSON tracks SQL within noise, §6.2's
 first non-negotiable is free and the matter is closed. If it does not, the gap is the
 price of inspectability, and that price should be known before Phase 4 commits to it.
+
+---
+
+## 10. Resolution — 2026-08-12
+
+**Measured. Operation JSON tracks SQL exactly, and §6.2's first non-negotiable is
+free.** Phase 2a's driver (`nakhoda/bench/`) ran both targets over the same 40
+questions, arm B, three model tiers — 240 single-shot generations, graded by the
+reimplemented grader that reproduces §6.0 figure for figure.
+
+| Target | smol | default | slow | all | 95% CI |
+|---|---|---|---|---|---|
+| SQL | 33/40 | 40/40 | 39/40 | **112/120 (93.3%)** | [87.4, 96.6] |
+| Operation JSON | 33/40 | 40/40 | 39/40 | **112/120 (93.3%)** | [87.4, 96.6] |
+
+McNemar exact **p = 1.00** (discordant 5/5 — the same accuracy on different
+questions, not the same answers). Against the frozen arm B of §6.0, the SQL run is
+112/120 vs 115/120, **p = 0.453**: the driver reproduces the original within noise,
+which is what licenses comparing anything to it.
+
+**Risk 3 was real, and it was not model competence.** The first measurement put
+Operation JSON at 98/120 (81.7%), −11.7 pp, p = 0.0043 — apparently the price of
+inspectability, exactly as feared. It was not. Fifteen of the twenty-two failures
+were one error:
+
+```
+OperationError: operations[1]: ['docstatus'] already in scope.
+Name the joined column something else - this pipeline does not merge namespaces.
+```
+
+`join` refuses a selection whose name already exists on the left, by design — it is
+the rule that makes a pipeline readable without knowing either schema. The prompt
+never said so. Stating it, along with `date_trunc`'s argument order and its literal
+unit domain (fixed in the engine's own function registry, which the prompt renders),
+moved the arm from 98 to 112 and closed the gap entirely.
+
+So the cost of a grammar with zero pretraining exposure is paid in **prompt
+specification**, not in accuracy — provided every constraint the engine enforces is
+one the prompt states. The failure is mechanical, loud, and fixable once; a wrong
+answer in fluent SQL is none of those. `test_bench.py` now pins each stated rule to a
+pipeline the engine must reject, because the inverse defect — a rule the prompt
+invents and the engine does not have — costs accuracy forever and no measurement
+would reveal it.
+
+**What this does not cover.** Single-shot, no validate-and-repair loop, so it is a
+floor for the product rather than a description of it: three of the four remaining
+`ops` errors are the kind a repair loop is built to catch. The sample is still 40
+questions over one module (§6 row 4), and the two biases in the table above are still
+unquantified. The claim is narrow and it is the one that was missing: **the product's
+generation target is no worse than the benchmark's.**

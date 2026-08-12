@@ -90,6 +90,7 @@ def _date_trunc(unit: ir.Value, value: ir.Value) -> ir.Value:
 		raise ExpressionError(f"date_trunc() unit {literal!r} not in {sorted(allowed)}")
 	return value.truncate(literal)
 
+
 def _real(value: ir.Value) -> ir.Value:
 	"""Force a real-valued result.
 
@@ -119,6 +120,7 @@ def _promote(build: Callable[[ir.Value, ir.Value], ir.Value]) -> Callable[..., i
 		return out
 
 	return apply
+
 
 #: The admitted vocabulary. Every entry is either used by the gold question set
 #: or is the closure of an operator family that is - a comparison set without
@@ -155,7 +157,13 @@ FUNCTIONS: dict[str, Fn] = {
 	"abs": Fn(SCALAR, 1, 1, lambda a: a.abs(), "absolute value"),
 	"coalesce": Fn(SCALAR, 2, None, lambda *a: ibis.coalesce(*a), "first non-null"),
 	"date": Fn(SCALAR, 1, 1, _date, "cast to date"),
-	"date_trunc": Fn(SCALAR, 2, 2, _date_trunc, "truncate a date/time to a unit"),
+	"date_trunc": Fn(
+		SCALAR,
+		2,
+		2,
+		_date_trunc,
+		"date_trunc(unit, value); unit is a literal: year|quarter|month|week|day|hour|minute|second",
+	),
 }
 
 _LITERAL_TYPES = (str, int, float, bool, type(None), datetime.date, datetime.datetime)
