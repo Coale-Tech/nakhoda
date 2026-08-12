@@ -54,10 +54,13 @@ packages = []
 [tool.ruff]
 line-length = 110
 target-version = "py310"
-# Frozen research evidence, vendored verbatim. Its value is that it reproduces
-# byte-identical (see the folder README); reformatting it would trade that for
-# tidiness. Only two edits were made - relocatable paths and an import guard.
-exclude = ["nakhoda/tests/semantic_bench"]
+# Two exclusions, both because the content is evidence rather than source.
+# semantic_bench/ is the research harness, vendored verbatim - its value is that it
+# reproduces byte-identical (see its README), and only two edits were ever made to
+# it: relocatable paths and an import guard. docs/ quotes Insights and Frappe source
+# inside fences; ruff >=0.16 formats Markdown code blocks, so linting docs/ would
+# silently rewrite quoted source and make the citations wrong.
+exclude = ["nakhoda/tests/semantic_bench", "docs"]
 
 [tool.ruff.lint]
 select = [
