@@ -100,6 +100,23 @@ jobs:
           python -m unittest nakhoda.tests.test_operations -v
           python -m unittest nakhoda.tests.test_no_ml_surface -v
 
+  # Phase 9. Gate A's zero-Python half: none of the fork's hardcoded per-domain
+  # branches (`DASHBOARD_TYPES`, `_calculate_kpis`, `_prepare_charts`) has a
+  # counterpart anywhere in the tree. The rest of Phase 9's two gates need a
+  # real site (`bench --site <site> run-tests --app nakhoda`) and are not run
+  # here, matching every other doctype-level test in this app.
+  intelligence-templates:
+    name: Intelligence templates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+
+      - name: Gate A (no live surface)
+        run: python -m unittest nakhoda.tests.test_templates.NoLiveSurface -v
+
   lint:
     name: Lint
     runs-on: ubuntu-latest

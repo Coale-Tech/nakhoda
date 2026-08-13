@@ -26,9 +26,13 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-import frappe
+try:
+	import frappe
 
-from nakhoda.api import templates as api_templates
+	from nakhoda.api import templates as api_templates
+except ImportError:
+	frappe = None
+	api_templates = None
 
 DOCTYPE = "Nakhoda Intelligence Template"
 
