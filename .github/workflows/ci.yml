@@ -117,6 +117,25 @@ jobs:
       - name: Gate A (no live surface)
         run: python -m unittest nakhoda.tests.test_templates.NoLiveSurface -v
 
+  # Phase 10. The `DashboardPatch` grammar: closed op set, adversarial-prompt
+  # rejection, add/set_filter/remove_item semantics, removed items staying in
+  # `panels` flagged rather than deleted. `engine/dashboard.py` never touches
+  # a database - bare data in, bare data out - so this needs nothing beyond
+  # the standard library. The doctype wiring (`apply_patch`/`revert` writing
+  # a real `Nakhoda Dashboard Version` row) needs a real site and is not run
+  # here, matching Phase 9's split.
+  dashboard-patch:
+    name: Dashboard patch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+
+      - name: Gate
+        run: python -m unittest nakhoda.tests.test_dashboard -v
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
