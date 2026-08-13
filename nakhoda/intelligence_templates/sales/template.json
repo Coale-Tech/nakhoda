@@ -1,0 +1,41 @@
+{
+  "key": "sales",
+  "title": "Sales Intelligence",
+  "icon": "trending-up",
+  "color": "#3B82F6",
+  "source": null,
+  "metrics": [
+    {
+      "label": "Revenue",
+      "expression": "sum(grand_total)",
+      "format": "Currency",
+      "direction": "Higher Is Better"
+    },
+    {
+      "label": "Average Order Value",
+      "expression": "avg(grand_total)",
+      "format": "Currency",
+      "direction": "Higher Is Better"
+    }
+  ],
+  "panels": [
+    { "type": "line", "title": "Revenue Trend", "measure": "revenue", "x": "posting_date" },
+    { "type": "line", "title": "Forecast", "measure": "forecast", "x": "posting_date" },
+    { "type": "table", "title": "Top Customers", "measure": "revenue", "x": "customer" }
+  ],
+  "skill": "Sales Intelligence reads submitted Sales Invoice rows - drafts and returns (negative grand_total) are both present in the source query, so a raw sum already nets returns out; do not subtract them again. The forecast panel is a holt_winters projection with a 95% confidence band, not a target - present it as a range (`forecast_lower`..`forecast_upper`), not a single number, when a user asks what next month looks like.",
+  "ml": [
+    {
+      "operation": "forecast",
+      "column": "forecast",
+      "params": {
+        "column": "revenue",
+        "date_column": "posting_date",
+        "method": "holt_winters",
+        "periods": 12,
+        "freq": "M",
+        "confidence": 0.95
+      }
+    }
+  ]
+}

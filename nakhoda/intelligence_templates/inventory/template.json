@@ -1,0 +1,38 @@
+{
+  "key": "inventory",
+  "title": "Inventory Insights",
+  "icon": "package",
+  "color": "#F59E0B",
+  "source": null,
+  "metrics": [
+    {
+      "label": "Stock Value",
+      "expression": "sum(stock_value)",
+      "format": "Currency",
+      "direction": "Higher Is Better"
+    },
+    {
+      "label": "Items Below Reorder",
+      "expression": "count_if(actual_qty < reorder_level)",
+      "format": "Number",
+      "direction": "Lower Is Better"
+    }
+  ],
+  "panels": [
+    { "type": "bar", "title": "Stock Value by Warehouse", "measure": "stock_value", "x": "warehouse" },
+    { "type": "table", "title": "Slow-Moving Segment", "measure": "segment", "x": "item_code" }
+  ],
+  "skill": "Inventory Insights reads live Bin rows for on-hand value - actual_qty and stock_value reflect the current stock ledger, not a point-in-time snapshot. The slow-moving segment is an RFM (recency/frequency/monetary) cluster over Stock Ledger Entry issue history, not a single-rule threshold - an item can be low-frequency but high-value and still not read as slow-moving; `segment` is a cluster label (0..3), not ranked or named.",
+  "ml": [
+    {
+      "operation": "segment",
+      "column": "segment",
+      "params": {
+        "id_column": "item_code",
+        "date_column": "posting_date",
+        "value_column": "stock_value_difference",
+        "clusters": 4
+      }
+    }
+  ]
+}

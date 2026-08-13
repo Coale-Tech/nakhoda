@@ -1,0 +1,181 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "hash",
+ "creation": "2026-08-13 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "key",
+  "title",
+  "icon",
+  "color",
+  "source",
+  "metrics_section",
+  "metrics",
+  "panels_section",
+  "panels",
+  "skill_section",
+  "skill",
+  "ml_section",
+  "ml",
+  "distribution_section",
+  "from_template",
+  "imported_version",
+  "imported_checksum"
+ ],
+ "fields": [
+  {
+   "description": "Domain identity - replaces the fork's `DASHBOARD_TYPES` dict key (e.g. `financial`, `sales`).",
+   "fieldname": "key",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Key",
+   "reqd": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "description": "Icon name, rendered by the frontend's icon set.",
+   "fieldname": "icon",
+   "fieldtype": "Data",
+   "label": "Icon"
+  },
+  {
+   "description": "Hex accent colour for the dashboard's chrome.",
+   "fieldname": "color",
+   "fieldtype": "Data",
+   "label": "Color"
+  },
+  {
+   "description": "The one query this domain reads. Permission-aware and cached like any other `Nakhoda Verified Query` - replaces the fork's per-domain collector.",
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Source",
+   "options": "Nakhoda Verified Query"
+  },
+  {
+   "fieldname": "metrics_section",
+   "fieldtype": "Section Break",
+   "label": "Metrics"
+  },
+  {
+   "fieldname": "metrics",
+   "fieldtype": "Table",
+   "label": "Metrics",
+   "options": "Nakhoda Intelligence Metric"
+  },
+  {
+   "fieldname": "panels_section",
+   "fieldtype": "Section Break",
+   "label": "Panels"
+  },
+  {
+   "default": "[]",
+   "description": "Chart specs and layout - the dashboard's `items[]` shape (Phase 5/10). Replaces the fork's `_prepare_charts` branch.",
+   "fieldname": "panels",
+   "fieldtype": "JSON",
+   "label": "Panels"
+  },
+  {
+   "fieldname": "skill_section",
+   "fieldtype": "Section Break",
+   "label": "Skill"
+  },
+  {
+   "description": "The playbook fragment routed into the agent's prompt when this domain is in scope - how to read these metrics, what to ask next.",
+   "fieldname": "skill",
+   "fieldtype": "Long Text",
+   "label": "Skill"
+  },
+  {
+   "fieldname": "ml_section",
+   "fieldtype": "Section Break",
+   "label": "ML"
+  },
+  {
+   "fieldname": "ml",
+   "fieldtype": "Table",
+   "label": "ML Operations",
+   "options": "Nakhoda Intelligence ML Operation"
+  },
+  {
+   "fieldname": "distribution_section",
+   "fieldtype": "Section Break",
+   "label": "Distribution"
+  },
+  {
+   "description": "The shipping template's qualified id (`{app}/{folder}`), if this record was imported from one. Empty for a record created by hand.",
+   "fieldname": "from_template",
+   "fieldtype": "Data",
+   "label": "From Template",
+   "read_only": 1
+  },
+  {
+   "description": "The shipped `manifest.json` `version` this copy was last taken from.",
+   "fieldname": "imported_version",
+   "fieldtype": "Int",
+   "label": "Imported Version",
+   "read_only": 1
+  },
+  {
+   "description": "`sha256` of this record as exported at import/update time. Compared against a fresh export on every `migrate` to tell a site-edited copy from a pristine one - see `api/templates.py:_is_customized`.",
+   "fieldname": "imported_checksum",
+   "fieldtype": "Data",
+   "label": "Imported Checksum",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-13 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nakhoda",
+ "name": "Nakhoda Intelligence Template",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda User",
+   "share": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "title"
+}

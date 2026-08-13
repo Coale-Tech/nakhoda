@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "title": "Production Analytics",
+  "description": "Manufacturing efficiency and work order cost outliers.",
+  "module": "Nakhoda",
+  "required_apps": ["erpnext"],
+  "source_doctypes": ["Work Order"]
+}

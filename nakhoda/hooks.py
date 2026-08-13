@@ -5,6 +5,16 @@ app_description = "AI-native analytics platform for Frappe and ERPNext"
 app_email = "sajmustafa@hotmail.com"
 app_license = "agpl-3.0"
 
+# Intelligence Templates
+# ----------------------
+# Any installed app, including this one, may declare this hook to contribute
+# domain dashboards. Each `{rel_path}/{folder}/` under the app carries a
+# `manifest.json` + `template.json` (+ optional `preview.png`); discovery is
+# live off `frappe.get_installed_apps()`, keyed `{app}/{folder}` - no migrate
+# step, no registry doctype. See `api/templates.py` and build-plan Phase 9.
+
+nakhoda_intelligence_templates = "intelligence_templates"
+
 # Apps
 # ------------------
 
@@ -165,6 +175,14 @@ app_license = "agpl-3.0"
 # 		"nakhoda.tasks.monthly"
 # 	],
 # }
+
+# Migration
+# ---------
+# Push a newer shipped Intelligence Template version into every pristine
+# (unedited) imported copy. A site-edited copy is left alone - see
+# api/templates.py:sync_intelligence_template_updates and build-plan Phase 9.
+
+after_migrate = "nakhoda.api.templates.sync_intelligence_template_updates"
 
 # Testing
 # -------

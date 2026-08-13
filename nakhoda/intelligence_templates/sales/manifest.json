@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "title": "Sales Intelligence",
+  "description": "Sales performance, customer insights, and conversion, with a forecast on the trend.",
+  "module": "Nakhoda",
+  "required_apps": ["erpnext"],
+  "source_doctypes": ["Sales Invoice"]
+}

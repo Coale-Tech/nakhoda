@@ -1,0 +1,38 @@
+{
+  "key": "customer",
+  "title": "Customer Intelligence",
+  "icon": "users",
+  "color": "#EC4899",
+  "source": null,
+  "metrics": [
+    {
+      "label": "Active Customers",
+      "expression": "count_distinct(customer)",
+      "format": "Number",
+      "direction": "Higher Is Better"
+    },
+    {
+      "label": "Lifetime Value",
+      "expression": "sum(grand_total)",
+      "format": "Currency",
+      "direction": "Higher Is Better"
+    }
+  ],
+  "panels": [
+    { "type": "table", "title": "Customer Segments", "measure": "segment", "x": "customer" },
+    { "type": "bar", "title": "Value by Segment", "measure": "monetary", "x": "segment" }
+  ],
+  "skill": "Customer Intelligence segments on submitted Sales Invoice history: recency (days since last invoice), frequency (invoice count), monetary (sum of grand_total), clustered into 4 unranked groups. `segment` labels are stable only within one run of this template's source query - do not compare a segment number from last month's export to this month's without re-checking the cluster centroids, they can shift.",
+  "ml": [
+    {
+      "operation": "segment",
+      "column": "segment",
+      "params": {
+        "id_column": "customer",
+        "date_column": "posting_date",
+        "value_column": "grand_total",
+        "clusters": 4
+      }
+    }
+  ]
+}

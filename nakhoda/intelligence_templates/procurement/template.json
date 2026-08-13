@@ -1,0 +1,33 @@
+{
+  "key": "procurement",
+  "title": "Procurement Analytics",
+  "icon": "shopping-cart",
+  "color": "#8B5CF6",
+  "source": null,
+  "metrics": [
+    {
+      "label": "Spend",
+      "expression": "sum(grand_total)",
+      "format": "Currency",
+      "direction": "Lower Is Better"
+    },
+    {
+      "label": "Active Suppliers",
+      "expression": "count_distinct(supplier)",
+      "format": "Number",
+      "direction": "Higher Is Better"
+    }
+  ],
+  "panels": [
+    { "type": "bar", "title": "Spend by Supplier", "measure": "spend", "x": "supplier" },
+    { "type": "table", "title": "Cost Outliers", "measure": "anomaly_score", "x": "supplier" }
+  ],
+  "skill": "Procurement Analytics reads submitted Purchase Invoice rows. A row flagged `is_anomaly` is a statistical statement about this supplier's own historical spend, not a claim about market price - do not tell a user a flagged invoice is overpriced without checking what changed (quantity, item mix, currency) on that specific voucher.",
+  "ml": [
+    {
+      "operation": "detect_anomalies",
+      "column": "anomaly_score",
+      "params": { "column": "spend", "contamination": 0.05 }
+    }
+  ]
+}

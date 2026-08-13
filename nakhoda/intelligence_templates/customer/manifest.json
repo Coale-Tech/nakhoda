@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "title": "Customer Intelligence",
+  "description": "Customer segmentation, retention, and lifetime value.",
+  "module": "Nakhoda",
+  "required_apps": ["erpnext"],
+  "source_doctypes": ["Sales Invoice", "Customer"]
+}

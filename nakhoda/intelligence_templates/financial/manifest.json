@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "title": "Financial Analytics",
+  "description": "Revenue, expenses, profit/loss, and cash flow, with GL anomalies flagged automatically.",
+  "module": "Nakhoda",
+  "required_apps": ["erpnext"],
+  "source_doctypes": ["GL Entry"]
+}

@@ -1,0 +1,33 @@
+{
+  "key": "production",
+  "title": "Production Analytics",
+  "icon": "settings",
+  "color": "#EF4444",
+  "source": null,
+  "metrics": [
+    {
+      "label": "Work Orders Completed",
+      "expression": "count_if(status == \"Completed\")",
+      "format": "Number",
+      "direction": "Higher Is Better"
+    },
+    {
+      "label": "Actual Operating Cost",
+      "expression": "sum(actual_operating_cost)",
+      "format": "Currency",
+      "direction": "Lower Is Better"
+    }
+  ],
+  "panels": [
+    { "type": "bar", "title": "Cost by Work Order", "measure": "actual_operating_cost", "x": "production_item" },
+    { "type": "table", "title": "Cost Outliers", "measure": "anomaly_score", "x": "name" }
+  ],
+  "skill": "Production Analytics reads Work Order rows across every status, not only Completed - a Stopped or Cancelled order still carries a real actual_operating_cost worth investigating. A flagged cost outlier compares this order's cost against every other order in the same query result, not against a BOM-derived expected cost, so cross-check the item's BOM before calling it a defect.",
+  "ml": [
+    {
+      "operation": "detect_anomalies",
+      "column": "anomaly_score",
+      "params": { "column": "actual_operating_cost", "contamination": 0.05 }
+    }
+  ]
+}

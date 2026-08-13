@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "title": "Inventory Insights",
+  "description": "Stock levels, turnover, and slow-moving items by warehouse.",
+  "module": "Nakhoda",
+  "required_apps": ["erpnext"],
+  "source_doctypes": ["Bin", "Stock Ledger Entry"]
+}

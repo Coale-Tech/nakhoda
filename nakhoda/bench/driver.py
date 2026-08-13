@@ -51,9 +51,24 @@ def _fenced(text: str) -> str:
 
 
 def grammar() -> str:
-	"""The operation grammar, rendered from the engine that implements it."""
+	"""The operation grammar, rendered from the engine that implements it.
+
+	`docs/plan/12-build-plan.md` Phase 8 folded ML into the same grammar: an
+	agent asks for a forecast, an anomaly flag, a segment or a score the same
+	way it asks for a filter or a join - one more operation type, validated
+	and compiled by the same engine. `validate_pipeline` is what actually
+	restricts an ML step to at most one, and only last; this prompt states
+	that restriction, it does not enforce it."""
 	from nakhoda.engine.expression import FUNCTIONS
-	from nakhoda.engine.operations import JOIN_TYPES, OPERATIONS
+	from nakhoda.engine.operations import (
+		ANOMALY_METHODS,
+		FORECAST_FREQS,
+		FORECAST_METHODS,
+		JOIN_TYPES,
+		OPERATIONS,
+		SCORE_METHODS,
+		SEGMENT_METHODS,
+	)
 
 	shapes = {
 		"source": '{"type": "source", "table": TABLE}',
@@ -70,6 +85,28 @@ def grammar() -> str:
 		),
 		"order_by": '{"type": "order_by", "keys": [{"expr": EXPR, "desc": true | false}, ...]}',
 		"limit": '{"type": "limit", "n": POSITIVE INTEGER}',
+		"forecast": (
+			'{"type": "forecast", "column": NAME, "date_column": COLUMN, "periods": POSITIVE INTEGER,\n'
+			'    "method": ' + " | ".join(json.dumps(m) for m in FORECAST_METHODS) + ",\n"
+			'    "freq": ' + " | ".join(json.dumps(f) for f in FORECAST_FREQS) + ' (default "D"),\n'
+			'    "confidence": NUMBER IN (0, 1) (default 0.95)}'
+		),
+		"detect_anomalies": (
+			'{"type": "detect_anomalies", "column": NAME,\n'
+			'    "method": '
+			+ " | ".join(json.dumps(m) for m in ANOMALY_METHODS)
+			+ ' (default "isolation_forest"),\n'
+			'    "contamination": NUMBER IN (0, 0.5] (default 0.05)}'
+		),
+		"segment": (
+			'{"type": "segment", "id_column": COLUMN, "date_column": COLUMN, "value_column": COLUMN,\n'
+			'    "method": ' + " | ".join(json.dumps(m) for m in SEGMENT_METHODS) + ' (default "rfm"),\n'
+			'    "clusters": INTEGER >= 2 (default 4)}'
+		),
+		"score": (
+			'{"type": "score", "target": COLUMN, "id_column": COLUMN, "feature_columns": [COLUMN, ...],\n'
+			'    "method": ' + " | ".join(json.dumps(m) for m in SCORE_METHODS) + ' (default "auto")}'
+		),
 	}
 	missing = set(OPERATIONS) - set(shapes)
 	if missing:  # the engine grew an operation and this prompt does not describe it
@@ -109,6 +146,8 @@ def grammar() -> str:
 		"    nothing is auto-suffixed, so a joined `docstatus` beside an existing one",
 		"    is an error. Name it `invoice_docstatus` or similar.",
 		"  Column names are the physical names in the schema above.",
+		"  `forecast`, `detect_anomalies`, `segment` and `score` may appear at most",
+		"    once, and only as the pipeline's last operation.",
 	]
 	return "\n".join(lines)
 

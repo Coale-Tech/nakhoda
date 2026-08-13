@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "title": "Procurement Analytics",
+  "description": "Supplier performance, spend analysis, and cost outliers.",
+  "module": "Nakhoda",
+  "required_apps": ["erpnext"],
+  "source_doctypes": ["Purchase Invoice"]
+}

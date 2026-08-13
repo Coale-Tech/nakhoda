@@ -1,0 +1,29 @@
+{
+  "key": "financial",
+  "title": "Financial Analytics",
+  "icon": "dollar-sign",
+  "color": "#10B981",
+  "source": null,
+  "metrics": [
+    {
+      "label": "Net Movement",
+      "expression": "sum(debit) - sum(credit)",
+      "format": "Currency",
+      "direction": "Higher Is Better"
+    },
+    {
+      "label": "Posting Volume",
+      "expression": "count_distinct(voucher_no)",
+      "format": "Number",
+      "direction": "Higher Is Better"
+    }
+  ],
+  "panels": [
+    { "type": "line", "title": "Net Movement Over Time", "measure": "net_movement", "x": "posting_date" },
+    { "type": "bar", "title": "Movement by Account", "measure": "net_movement", "x": "account" }
+  ],
+  "skill": "Financial Analytics reads posted GL Entry rows only - draft and cancelled entries are excluded by the source query, not by this playbook. Net Movement is debit minus credit; a negative account balance is not automatically an error, it depends on the account's root type (Asset/Expense debit-normal vs Liability/Income/Equity credit-normal). When a user asks 'why did this spike', check the anomaly panel before proposing a cause - it already ran isolation-forest over the same series.",
+  "ml": [
+    { "operation": "detect_anomalies", "column": "anomaly_score", "params": { "column": "net_movement", "contamination": 0.05 } }
+  ]
+}
