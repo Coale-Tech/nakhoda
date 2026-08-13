@@ -1,0 +1,96 @@
+/* Ported verbatim from docs/design/mockup/app.css lines 1-19 - the base
+   reset the mockup measured its WCAG and geometry gates against. Do not
+   hand-tune: any drift here invalidates the audit in 14-frontend-design.md §4. */
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	font-family: var(--font-stack);
+	font-size: var(--text-base);
+	font-weight: var(--weight-regular);
+	font-feature-settings:
+		"cv11",
+		"ss01";
+	-webkit-font-smoothing: antialiased;
+	color: var(--ink-gray-8);
+	background: var(--surface-white);
+}
+
+.num {
+	font-variant-numeric: tabular-nums;
+}
+.mono {
+	font-family: var(--font-mono);
+	font-size: var(--text-xs);
+}
+
+
+/* Global `.btn` family, ported verbatim from `app.css` lines 99-117. Every
+ * component uses these unscoped classes instead of re-declaring `.btn-sm`
+ * per component - one definition, so `.btn-primary`/`.btn-sm` never drift
+ * between the composer, the answer card header, and the ambiguity prompt.
+ */
+.btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	height: 28px;
+	padding: 0 10px;
+	border-radius: var(--border-radius);
+	border: 1px solid var(--outline-gray-2);
+	background: var(--surface-white);
+	color: var(--ink-gray-8);
+	font-family: inherit;
+	font-size: var(--text-xs);
+	font-weight: var(--weight-medium);
+	cursor: pointer;
+	white-space: nowrap;
+}
+.btn:hover {
+	background: var(--surface-gray-2);
+}
+.btn svg {
+	width: 13px;
+	height: 13px;
+	stroke-width: 1.8;
+}
+.btn-primary {
+	background: var(--surface-gray-7);
+	border-color: var(--surface-gray-7);
+	color: var(--surface-white);
+}
+[data-theme="dark"] .btn-primary {
+	color: var(--surface-white);
+}
+.btn-primary:hover {
+	background: var(--surface-gray-6);
+}
+.btn-ghost {
+	border-color: transparent;
+	background: none;
+}
+.btn-ghost:hover {
+	background: var(--surface-gray-2);
+}
+.btn-sm {
+	height: 24px;
+	padding: 0 8px;
+	font-size: var(--text-tiny);
+}
+.kbd {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	line-height: 1;
+	color: var(--text-tertiary);
+	border: 1px solid var(--outline-gray-2);
+	border-radius: var(--border-radius-tiny);
+	padding: 2px 4px;
+}
+.btn-primary .kbd {
+	color: inherit;
+	opacity: 0.5;
+	border-color: currentColor;
+}
