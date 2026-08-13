@@ -76,6 +76,30 @@ jobs:
           SEMANTIC_BENCH_ERPNEXT: ${{ github.workspace }}/erpnext
         run: python -m unittest nakhoda.tests.test_semantic -v
 
+  # Phase 8. The two build-plan gates: ML operations agree with the method
+  # read from the jkm fork on synthetic frames, and the frontend subtraction
+  # holds - no dedicated ML route, nav item, chart component or origin badge
+  # anywhere in the tree (`docs/plan/12-build-plan.md` §Phase 8 gate index).
+  # Bench-independent by construction: `engine/ml.py` never touches a
+  # database or a permission, so a synthetic pandas frame is the whole input
+  # this needs.
+  ml-operations:
+    name: ML operations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+
+      - run: pip install "pandas~=2.3.3" "scikit-learn~=1.7" "statsmodels~=0.14" "scipy~=1.16"
+
+      - name: Gate
+        run: |
+          python -m unittest nakhoda.tests.test_ml -v
+          python -m unittest nakhoda.tests.test_operations -v
+          python -m unittest nakhoda.tests.test_no_ml_surface -v
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
