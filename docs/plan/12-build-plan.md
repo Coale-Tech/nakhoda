@@ -88,6 +88,7 @@ apps/nakhoda/
     agent/             # Raven-pattern manager, tools, transcript
     doctype/           # see §4
     api/               # whitelisted endpoints
+    intelligence_templates/  # Phase 9: one folder per domain — manifest.json + template.json
   frontend/            # Vue 3 + Vite + frappe-ui
     src/
       inspector/       # operation step viewer + editor  ← replaces Insights' query/
@@ -141,7 +142,7 @@ Phase 5 and undercounted at "~13"; phases 6, 9 and 10 each need storage.
 | `Nakhoda Workbook` | 5 | Artifact container. **Must record the semantic-model version and prompt that produced it** |
 | `Nakhoda Chart` / `Dashboard` | 5 | Presentation |
 | `Nakhoda MCP Server` | 6 | Child of Space. Transport, URL/command, `cacheScope`, egress policy — Gate B fails without a per-server cache-scope field |
-| `Nakhoda Intelligence Template` | 9 | A domain dashboard as a declarative record. The six shipped domains are six fixtures; a seventh is one more and zero Python |
+| `Nakhoda Intelligence Template` | 9 | Domain dashboard as a declarative record — `metrics`/`panels`/`skill`/`ml`, plus `from_template`/`imported_version`/`imported_checksum` for update-in-place. Six shipped domains are six folders; a seventh is one more and zero Python |
 | `Nakhoda Dashboard Version` | 10 | Applied patch + prior `items[]`. Revert is restoring a row, not replaying an inverse patch |
 
 ---
@@ -603,11 +604,59 @@ proved this across eight execution models in ten hours on 2026-08-11).
 > point at "the ML part of the UI", the 147 `api/ml` endpoints were moved, not deleted.
 
 ### Phase 9 — `Intelligence Template` DocType
-A domain dashboard becomes a declarative record, not an `if/elif` chain.
+A domain dashboard becomes a declarative record, not an `if/elif` chain: `key`, `title`,
+`icon`, `color` for identity; `source` (Link → `Nakhoda Verified Query`); `metrics`
+(Table: label, expression, format, target, direction); `panels` (JSON: chart specs +
+layout); `skill` (Long Text: the playbook fragment routed into the agent's prompt); `ml`
+(Table: which Phase 8 operations to attach).
 
-> **Gate:** a seventh domain is added by writing one fixture and **zero Python**. The fork's
-> hardcoded equivalents (`DASHBOARD_TYPES`, `_calculate_kpis`, `_prepare_charts`) must have no
-> counterpart in Nakhoda — if you find yourself writing one, this phase has failed.
+**Shipping and versioning reuse Insights' template pattern, reimplemented clean-room.**
+Insights solves exactly this distribution problem for workbooks
+(`nvumabaranda/apps/insights/insights/api/templates.py`) and the design generalises
+without copying a line: a hook any installed app can declare
+(`insights_workbooks = "workbook_templates"`, `hooks.py:36`), one directory per template
+underneath it (`manifest.json` + payload + optional `preview.png`), discovered live off
+`frappe.get_installed_apps()` with no migrate step and no registry doctype
+(`templates.py:64-104`), keyed `{app}/{folder}` so two apps can both ship a `sales`
+template without colliding. Import is gated on `required_apps ⊆ installed_apps` and
+warns on `has_source_data()` — a cheap `EXISTS` across `source_doctypes` — instead of
+silently importing an empty dashboard (`templates.py:139-153`). One shared,
+Administrator-owned, org-shared copy per site, not per user, created under a `filelock`
+so two admins clicking Import at once don't race a duplicate (`templates.py:294-320`).
+A `sha256` of the exported record, stamped at import (`imported_checksum`) and compared
+on every later check (`_is_customized`, `templates.py:323-339`), is what lets
+`sync_intelligence_template_updates()` push a version bump into every *pristine* copy on
+`migrate` while leaving a site-edited one alone — the one piece an ordinary `fixtures`
+hook cannot do, because it has no concept of "the site has since diverged."
+
+Nakhoda's own hook is `nakhoda_intelligence_templates`, open the same way. Each
+`{folder}/manifest.json` carries `version`, `title`, `description`, `required_apps`,
+`source_doctypes` — the same four required keys Insights enforces (`templates.py:14`)
+— plus `module`; the payload is `template.json`, the export of one `Nakhoda
+Intelligence Template` doc (`metrics`/`panels`/`skill`/`ml`), not a workbook.
+`Nakhoda Intelligence Template` itself carries `from_template`, `imported_version`,
+`imported_checksum` to make the above mechanical rather than a doctype that merely
+looks like a fixture.
+
+The six shipped domains are six folders under `nakhoda/intelligence_templates/`. A
+seventh costs one folder and zero Python — not one `bench --site … export-fixture`,
+which auto-imports on every migrate with no drift protection and no gallery UI, which
+is why Insights built its own mechanism instead of using Frappe's.
+
+> **Gate A.** A seventh domain is added by writing one folder — `manifest.json` +
+> `template.json`, no `preview.png` required — and **zero Python**. The fork's
+> hardcoded equivalents (`DASHBOARD_TYPES`, `_calculate_kpis`, `_prepare_charts`) must
+> have no counterpart in Nakhoda — if you find yourself writing one, this phase has
+> failed.
+>
+> **Gate B — distribution is real, not aspirational.** Register a second, unrelated
+> installed app declaring its own `nakhoda_intelligence_templates` entry; its template
+> is discovered and importable with no change to `nakhoda/` itself. Import it twice
+> concurrently and get one record, not two. Bump the shipped `version`, edit the
+> imported copy's `metrics`, then run `migrate`: the edited copy is left alone and
+> reports `customized: true`; an unedited sibling copy takes the update in place,
+> keeping its `name` so anything pointing at it — a Phase 10 dashboard, a bookmark —
+> still resolves.
 
 ### Phase 10 — `DashboardPatch`  ← *specified by `14-frontend-design.md` §3*
 The chat refines by emitting a validated patch over `items[]`, not prose. Schema, validator,
@@ -665,7 +714,8 @@ repeated eyeballing. A gate a careless reviewer can nod through is not a gate.
 | 7 | — | the §2.3 `pandas.read_csv` arbitrary-file read is attempted against the kernel and fails | probe |
 | 8 | — | a forecast renders in a stock chart with no `ml_predictions` branch in the render path | CI |
 | 8 | — | no ML route, nav item, chart component or origin badge exists anywhere in the frontend | CI (grep) |
-| 9 | — | a seventh domain costs one fixture and zero Python | CI |
+| 9 | A | a seventh domain costs one folder and zero Python | CI |
+| 9 | B | a template shipped by another app is discovered with zero code changes; a version bump never silently overwrites an edited copy | CI |
 | 10 | — | patch previews as a diff, applies on approval, reverts cleanly; a `DROP` fails validation | CI |
 | 10 | — | every touched item named with its state; removed items stay on the page as `removed` | CI |
 
