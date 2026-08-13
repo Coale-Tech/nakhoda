@@ -25,15 +25,14 @@ once found.
 
 from __future__ import annotations
 
-import time
 from typing import Any
 
 import frappe
 from frappe.model.document import Document
 from frappe.utils import now_datetime
 
-from nakhoda.engine import cache
-from nakhoda.engine.operations import OperationError, compile_pipeline, validate_pipeline
+from nakhoda.engine import cache, pipeline
+from nakhoda.engine.operations import OperationError, validate_pipeline
 from nakhoda.engine.permissions import for_user
 
 
@@ -92,29 +91,24 @@ class NakhodaVerifiedQuery(Document):
 		connector = source.connector()
 
 		resolver = for_user(connector.resolve, frappe.session.user)
-		expression = compile_pipeline(frappe.parse_json(self.operations), resolver)
-
 		cap = int(limit or settings.max_rows or 100_000)
-		expression = expression.limit(cap)
-
-		sql = connector.sql(expression)
-		started = time.monotonic()
-		frame = cache.cached(
-			sql,
-			connector.identity,
-			lambda: connector.execute(expression),
+		result = pipeline.run(
+			frappe.parse_json(self.operations),
+			resolver,
+			connector,
+			cap=cap,
 			ttl=int(settings.cache_ttl or cache.DEFAULT_TTL),
 		)
-		elapsed = time.monotonic() - started
 
-		self._record(cache.key(sql, connector.identity), len(frame), elapsed)
+		self._record(result.cache_key, len(result.frame), result.elapsed)
 		return {
-			"columns": list(frame.columns),
-			"rows": frame.to_dict(orient="records"),
-			"row_count": len(frame),
-			"truncated": len(frame) >= cap,
-			"execution_time": elapsed,
-			"sql": sql,
+			"columns": list(result.frame.columns),
+			"rows": result.frame.to_dict(orient="records"),
+			"row_count": len(result.frame),
+			"truncated": len(result.frame) >= cap,
+			"execution_time": result.elapsed,
+			"sql": result.sql,
+			"ml_operation": result.ml_operation,
 			"source": "verified",
 			"question": self.question,
 			"verified_by": self.verified_by,

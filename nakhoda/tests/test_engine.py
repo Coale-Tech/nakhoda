@@ -146,14 +146,20 @@ class GateA(unittest.TestCase):
 	def test_expressibility_holds_at_seven_operations(self):
 		"""The plan's claim, checked rather than asserted.
 
-		Every question fits inside the seven shipped operations. A pipeline that
-		needed an eighth would show up here before it showed up in the grammar.
+		Every question fits inside the seven Phase 0 operations - the forty gold
+		queries predate Phase 8's four ML operations, so they must not need one.
+		A pipeline that needed an eighth query operation would show up here before
+		it showed up in the grammar.
 		"""
-		from nakhoda.engine.operations import OPERATIONS
+		from nakhoda.engine.operations import ML_OPERATIONS, OPERATIONS
 
+		query_operations = tuple(op for op in OPERATIONS if op not in ML_OPERATIONS)
 		used = {op["type"] for ops in self.pipelines.values() for op in ops}
-		self.assertLessEqual(used, set(OPERATIONS))
-		self.assertEqual(len(OPERATIONS), 7, "the grammar grew; the ceiling is 14, say why in the plan")
+		self.assertLessEqual(used, set(query_operations))
+		self.assertEqual(len(query_operations), 7, "the grammar grew; the ceiling is 14, say why in the plan")
+		self.assertEqual(
+			len(OPERATIONS), 11, "Phase 8 adds forecast/detect_anomalies/segment/score; the ceiling is 14"
+		)
 
 
 if __name__ == "__main__":

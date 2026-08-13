@@ -27,13 +27,12 @@ cheaper than retrofitting it after.
 
 from __future__ import annotations
 
-import time
 from typing import Any
 
 import frappe
 
-from nakhoda.engine import cache
-from nakhoda.engine.operations import OperationError, compile_pipeline, validate_pipeline
+from nakhoda.engine import cache, pipeline
+from nakhoda.engine.operations import OperationError, validate_pipeline
 from nakhoda.engine.permissions import for_user
 
 
@@ -71,30 +70,28 @@ def run(operations: Any, data_source: str | None = None, limit: int | None = Non
 	settings = frappe.get_cached_doc("Nakhoda Settings")
 
 	try:
-		pipeline = validate_pipeline(frappe.parse_json(operations))
+		validate_pipeline(frappe.parse_json(operations))
 	except OperationError as exc:
 		frappe.throw(str(exc), title=frappe._("Invalid pipeline"))
 
 	connector = source.connector()
 	resolver = for_user(connector.resolve, frappe.session.user)
 	cap = int(limit or settings.max_rows or 100_000)
-	expression = compile_pipeline(pipeline, resolver).limit(cap)
-
-	sql = connector.sql(expression)
-	started = time.monotonic()
-	frame = cache.cached(
-		sql,
-		connector.identity,
-		lambda: connector.execute(expression),
+	result = pipeline.run(
+		frappe.parse_json(operations),
+		resolver,
+		connector,
+		cap=cap,
 		ttl=int(settings.cache_ttl or cache.DEFAULT_TTL),
 	)
 	return {
-		"columns": list(frame.columns),
-		"rows": frame.to_dict(orient="records"),
-		"row_count": len(frame),
-		"truncated": len(frame) >= cap,
-		"execution_time": time.monotonic() - started,
-		"sql": sql,
+		"columns": list(result.frame.columns),
+		"rows": result.frame.to_dict(orient="records"),
+		"row_count": len(result.frame),
+		"truncated": len(result.frame) >= cap,
+		"execution_time": result.elapsed,
+		"sql": result.sql,
+		"ml_operation": result.ml_operation,
 	}
 
 

@@ -1,18 +1,24 @@
 """The operation grammar: an ordered pipeline, compiled to one ibis expression.
 
-Seven operations, and the list is closed:
+Eleven operations, and the list is closed:
 
-    source     pick the table that defines the grain
-    join       bring named columns from another table into scope
-    filter     drop rows
-    select     choose and rename the columns in scope
-    summarize  change the grain: group keys + aggregate measures
-    order_by   sort
-    limit      truncate
+    source            pick the table that defines the grain
+    join              bring named columns from another table into scope
+    filter            drop rows
+    select            choose and rename the columns in scope
+    summarize         change the grain: group keys + aggregate measures
+    order_by          sort
+    limit             truncate
+    forecast          project a value column forward in time
+    detect_anomalies  flag outlying rows in a value column
+    segment           cluster rows into groups (RFM + k-means)
+    score             train on labelled rows, score every row
 
-Static analysis of the forty gold queries (build plan §5, Phase 0) put all of
-them inside these seven. Fourteen is the ceiling; `custom_operation`, `sql` and
-`code` are a standing refusal rather than a later decision.
+Static analysis of the forty gold queries (build plan §5, Phase 0) put the
+first seven inside these seven; the last four are Phase 8 (`docs/plan/
+12-build-plan.md` §5, `docs/plan/15-ml-dashboards.md` §4 Move 1). Fourteen is
+the ceiling; `custom_operation`, `sql` and `code` are a standing refusal
+rather than a later decision.
 
 Two properties this shape buys, both of which the alternative - handing a model
 a SQL string - gives up:
@@ -27,6 +33,17 @@ table and what to call them, instead of merging two namespaces and letting a
 suffix rule decide. `{"table": "tabCustomer", "select": [{"name":
 "customer_territory", ...}]}` is reviewable by someone who does not know either
 schema; `si_territory_y` is not.
+
+*The ML operations are the one deliberate break.* ibis cannot express
+Holt-Winters, isolation forests or k-means, so `forecast` / `detect_anomalies`
+/ `segment` / `score` cannot compile to SQL - `compile_pipeline` refuses a
+pipeline that contains one. `validate_pipeline` restricts them to the last
+position, so a pipeline is always "SQL, then optionally one ML step" and
+never SQL-ML-SQL. `nakhoda.engine.pipeline.run` is what runs the whole thing:
+it compiles everything before the break to one SQL statement - so permissions
+and caching apply exactly as they do to any other query - materialises that
+result, and only then, if the pipeline asked for it, hands the frame to
+`nakhoda.engine.ml.apply`.
 """
 
 from __future__ import annotations
@@ -42,7 +59,13 @@ from nakhoda.engine.expression import ExpressionError, compile_expr, is_aggregat
 _KEY = "__nk_join_key"
 
 JOIN_TYPES = ("inner", "left")
-OPERATIONS = ("source", "join", "filter", "select", "summarize", "order_by", "limit")
+FORECAST_METHODS = ("auto", "holt_winters", "linear")
+FORECAST_FREQS = ("D", "W", "M", "Q", "Y")
+ANOMALY_METHODS = ("isolation_forest",)
+SEGMENT_METHODS = ("rfm",)
+SCORE_METHODS = ("auto", "logistic", "gradient_boosting")
+ML_OPERATIONS = ("forecast", "detect_anomalies", "segment", "score")
+OPERATIONS = ("source", "join", "filter", "select", "summarize", "order_by", "limit", *ML_OPERATIONS)
 
 #: Resolves a table name to an ibis table. Supplied by the connector, so the
 #: compiler never learns which backend it is targeting.
@@ -95,6 +118,11 @@ def validate_pipeline(operations: Any) -> list[dict]:
 		if (kind == "source") != (i == 0):
 			raise OperationError(
 				f"operations[{i}]: `source` must be the first operation and appear exactly once"
+			)
+		if op.get("type") in ML_OPERATIONS and i != len(operations) - 1:
+			raise OperationError(
+				f"operations[{i}]: {op['type']!r} must be the last operation - a pipeline is "
+				f"SQL, then optionally one ML step, never SQL-ML-SQL (see `compile_pipeline`)"
 			)
 		_validate_one(op, f"operations[{i}]")
 
@@ -166,13 +194,95 @@ def _validate_one(op: dict, path: str) -> None:
 		if not isinstance(n, int) or isinstance(n, bool) or n <= 0:
 			raise OperationError(f"{path}.n: must be a positive integer, got {n!r}")
 
+	elif kind == "forecast":
+		for field in ("column", "date_column"):
+			if not isinstance(op.get(field), str) or not op[field]:
+				raise OperationError(f"{path}.{field}: must be a non-empty string")
+		periods = op.get("periods")
+		if not isinstance(periods, int) or isinstance(periods, bool) or periods <= 0:
+			raise OperationError(f"{path}.periods: must be a positive integer, got {periods!r}")
+		method = op.get("method", "auto")
+		if method not in FORECAST_METHODS:
+			raise OperationError(f"{path}.method: must be one of {list(FORECAST_METHODS)}, got {method!r}")
+		freq = op.get("freq", "D")
+		if freq not in FORECAST_FREQS:
+			raise OperationError(f"{path}.freq: must be one of {list(FORECAST_FREQS)}, got {freq!r}")
+		confidence = op.get("confidence", 0.95)
+		if not isinstance(confidence, (int, float)) or isinstance(confidence, bool) or not 0 < confidence < 1:
+			raise OperationError(f"{path}.confidence: must be a number in (0, 1), got {confidence!r}")
+
+	elif kind == "detect_anomalies":
+		if not isinstance(op.get("column"), str) or not op["column"]:
+			raise OperationError(f"{path}.column: must be a non-empty string")
+		method = op.get("method", "isolation_forest")
+		if method not in ANOMALY_METHODS:
+			raise OperationError(f"{path}.method: must be one of {list(ANOMALY_METHODS)}, got {method!r}")
+		contamination = op.get("contamination", 0.05)
+		if (
+			not isinstance(contamination, (int, float))
+			or isinstance(contamination, bool)
+			or not 0 < contamination <= 0.5
+		):
+			raise OperationError(f"{path}.contamination: must be a number in (0, 0.5], got {contamination!r}")
+
+	elif kind == "segment":
+		for field in ("id_column", "date_column", "value_column"):
+			if not isinstance(op.get(field), str) or not op[field]:
+				raise OperationError(f"{path}.{field}: must be a non-empty string")
+		method = op.get("method", "rfm")
+		if method not in SEGMENT_METHODS:
+			raise OperationError(f"{path}.method: must be one of {list(SEGMENT_METHODS)}, got {method!r}")
+		clusters = op.get("clusters", 4)
+		if not isinstance(clusters, int) or isinstance(clusters, bool) or clusters < 2:
+			raise OperationError(f"{path}.clusters: must be an integer >= 2, got {clusters!r}")
+
+	elif kind == "score":
+		for field in ("target", "id_column"):
+			if not isinstance(op.get(field), str) or not op[field]:
+				raise OperationError(f"{path}.{field}: must be a non-empty string")
+		features = op.get("feature_columns")
+		if not isinstance(features, Sequence) or isinstance(features, str) or not features:
+			raise OperationError(f"{path}.feature_columns: must be a non-empty list")
+		for i, f in enumerate(features):
+			if not isinstance(f, str) or not f:
+				raise OperationError(f"{path}.feature_columns[{i}]: must be a non-empty string")
+		if op["target"] in features:
+			raise OperationError(f"{path}: target {op['target']!r} cannot also be a feature column")
+		method = op.get("method", "auto")
+		if method not in SCORE_METHODS:
+			raise OperationError(f"{path}.method: must be one of {list(SCORE_METHODS)}, got {method!r}")
+
+
+def split_pipeline(operations: Sequence[dict]) -> tuple[list[dict], dict | None]:
+	"""The ibis-compilable prefix, and the trailing ML operation if there is one.
+
+	`validate_pipeline` already restricts an ML operation to the last position,
+	so this is a slice, not a scan.
+	"""
+	ops = list(operations)
+	if ops and ops[-1]["type"] in ML_OPERATIONS:
+		return ops[:-1], ops[-1]
+	return ops, None
+
 
 def compile_pipeline(operations: Any, resolve: TableResolver) -> ir.Table:
-	"""Compile a pipeline to a single unexecuted ibis table expression."""
-	ops = validate_pipeline(operations)
-	table = resolve(ops[0]["table"])
+	"""Compile a pipeline to a single unexecuted ibis table expression.
 
-	for i, op in enumerate(ops[1:], start=1):
+	Refuses a pipeline that ends in an ML operation - `forecast` and friends
+	cannot compile to SQL. Run those through `nakhoda.engine.pipeline.run`,
+	which compiles the prefix here and applies the ML step separately.
+	"""
+	ops = validate_pipeline(operations)
+	prefix, ml_op = split_pipeline(ops)
+	if ml_op is not None:
+		raise OperationError(
+			f"operations: pipeline ends in {ml_op['type']!r}, which cannot compile to SQL. "
+			f"Use `nakhoda.engine.pipeline.run`, not `compile_pipeline`, for a pipeline with "
+			f"an ML step."
+		)
+
+	table = resolve(prefix[0]["table"])
+	for i, op in enumerate(prefix[1:], start=1):
 		table = _apply(op, table, resolve, f"operations[{i}]")
 
 	return table
@@ -259,10 +369,17 @@ def _join(op: dict, left: ir.Table, resolve: TableResolver, path: str) -> ir.Tab
 
 
 __all__ = [
+	"ANOMALY_METHODS",
+	"FORECAST_FREQS",
+	"FORECAST_METHODS",
 	"JOIN_TYPES",
+	"ML_OPERATIONS",
 	"OPERATIONS",
+	"SCORE_METHODS",
+	"SEGMENT_METHODS",
 	"ExpressionError",
 	"OperationError",
 	"compile_pipeline",
+	"split_pipeline",
 	"validate_pipeline",
 ]
