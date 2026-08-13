@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="nakhoda/public/nakhoda-logo.png" alt="Nakhoda" width="180">
+
 # Nakhoda
 
 **The only BI tool that already knows what your data means, because the application defined it.**

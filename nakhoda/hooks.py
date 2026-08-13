@@ -21,15 +21,14 @@ nakhoda_intelligence_templates = "intelligence_templates"
 # required_apps = []
 
 # Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "nakhoda",
-# 		"logo": "/assets/nakhoda/logo.png",
-# 		"title": "Nakhoda",
-# 		"route": "/nakhoda",
-# 		"has_permission": "nakhoda.api.permission.has_app_permission"
-# 	}
-# ]
+add_to_apps_screen = [
+	{
+		"name": "nakhoda",
+		"logo": "/assets/nakhoda/nakhoda-logo.png",
+		"title": "Nakhoda",
+		"route": "/nakhoda",
+	}
+]
 
 # Includes in <head>
 # ------------------
@@ -183,6 +182,17 @@ nakhoda_intelligence_templates = "intelligence_templates"
 # api/templates.py:sync_intelligence_template_updates and build-plan Phase 9.
 
 after_migrate = "nakhoda.api.templates.sync_intelligence_template_updates"
+
+# Fixtures
+# --------
+# The sidebar entry point: one `Workspace` record, `nakhoda/fixtures/workspace.json`.
+# It only deep-links into `/nakhoda` (the SPA) plus a few admin shortcuts - the
+# product's whole point is the single Ask surface, not a desk CRUD app; see
+# docs/design/14-frontend-design.md - section 4.
+
+fixtures = [
+	{"doctype": "Workspace", "filters": [["name", "=", "Nakhoda"]]},
+]
 
 # Testing
 # -------
