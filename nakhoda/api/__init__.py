@@ -46,6 +46,20 @@ def execute(query: str, limit: int | None = None) -> dict[str, Any]:
 
 
 @frappe.whitelist()
+def execute_verified(query: str, limit: int | None = None) -> dict[str, Any]:
+	"""Run a `Nakhoda Verified Query` as the current user.
+
+	Separate from `execute` above so the two answer shapes are never confused
+	at the boundary: this one is refused unless the document is submitted
+	(Gate A, `nakhoda_verified_query.py`), and its response always carries
+	`source: "verified"` plus the question it answers and who approved it.
+	"""
+	doc = frappe.get_doc("Nakhoda Verified Query", query)
+	doc.check_permission("read")
+	return doc.execute(limit=int(limit) if limit else None)
+
+
+@frappe.whitelist()
 def run(operations: Any, data_source: str | None = None, limit: int | None = None) -> dict[str, Any]:
 	"""Run a pipeline that was never stored.
 

@@ -388,6 +388,22 @@ python -m nakhoda.bench --set full --run /tmp/nakhoda-2b-gate plan \
 > exists, so it is checked when Phase 4's gate runs; it is stated here because it is the
 > reason Phase 3 exists at all.
 
+**Gate A done, 2026-08-12.** `Nakhoda Verified Query`
+(`nakhoda/nakhoda/doctype/nakhoda_verified_query/`) is `is_submittable`, and
+`execute` refuses unless `docstatus == 1` — checked before permissions, before
+compilation, unconditionally. Approval is a Frappe `submit` permission, not app
+logic: `Nakhoda User` holds `create`/`write` but not `submit` on this doctype, so
+it can draft a question and its pipeline but `doc.submit()` is refused by Frappe
+core, from a role a `System Manager` or `Nakhoda Admin` grants — authorship and
+approval are structurally different actions. `api.execute_verified` labels every
+answer `source: "verified"` plus `question`, `verified_by`, `verified_on`, so
+nothing downstream has to guess where a number came from. The row-permission
+engine is unmoved by approval status: a verified query still returns zero rows
+to a caller who cannot read the underlying table (`test_verified_query.py`, 8
+tests, live against `gardatest.local`). Gate B is unimplemented — it needs
+Phase 4's agent to exist before "prefers it over generating SQL" is even a
+question to test.
+
 ### Phase 4 — Agent
 Raven-pattern manager; tools over Nakhoda's own API; stream over
 `frappe.publish_realtime`; emit Operation JSON.
