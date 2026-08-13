@@ -1,0 +1,127 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-13 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "user",
+  "session",
+  "cell_count",
+  "code",
+  "results",
+  "result_section",
+  "status",
+  "error",
+  "duration"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "User",
+   "options": "User",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "description": "Groups the cells of one kernel invocation. Not a link to any other doctype - a kernel is a live container, not a record; this is only what lets an audit reader tell which rows came from the same `NotebookKernel`.",
+   "fieldname": "session",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Session",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "cell_count",
+   "fieldtype": "Int",
+   "label": "Cell Count",
+   "read_only": 1
+  },
+  {
+   "description": "The ordered cell sources run against this kernel, as a JSON array - the artifact that makes a session re-runnable and reviewable, the same reasoning `Nakhoda Agent Run.operations` records the operations that answered a question.",
+   "fieldname": "code",
+   "fieldtype": "Code",
+   "label": "Code",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "description": "One `{stdout, result, error}` object per cell, in the same order as `code` - what the kernel actually returned, not just what was asked of it.",
+   "fieldname": "results",
+   "fieldtype": "Code",
+   "label": "Results",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result_section",
+   "fieldtype": "Section Break",
+   "label": "Result"
+  },
+  {
+   "default": "ok",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "ok\nerror\nunavailable",
+   "read_only": 1
+  },
+  {
+   "description": "Set on `status != ok`. `unavailable` means Docker itself was missing or unreachable - no cell ran at all, per Phase 7's \"ship nothing\" fallback (`12-build-plan.md`).",
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Float",
+   "label": "Duration (Seconds)",
+   "precision": "3",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-13 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nakhoda",
+ "name": "Nakhoda Notebook Run",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda Admin",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}
