@@ -12,11 +12,26 @@ Shipping and versioning - discovery, import, update-in-place, and the
 `migrate`-time sync - live in `api/templates.py`, not here, because none of it
 needs a bound document to run against; it operates on the shipped
 `manifest.json`/`template.json` pairs and this doctype's rows as data.
+
+`apply_patch`/`revert` are the one thing that *does* need a bound document:
+the closed `add_chart` / `set_filter` / `remove_item` grammar validation and
+diffing live in `engine/dashboard.py` (bare data in, bare data out, no site
+needed); this controller is only the thin, permission-checked wrapper that
+persists the result and the `Nakhoda Dashboard Version` snapshot it needs to
+`revert` later.
 """
 
 from __future__ import annotations
 
+import json
+
+import frappe
 from frappe.model.document import Document
+from frappe.utils import now_datetime
+
+from nakhoda.engine.dashboard import apply_patch as compile_patch
+
+_ADMIN_ROLES = ["Nakhoda Admin", "System Manager"]
 
 
 class NakhodaIntelligenceTemplate(Document):
@@ -48,3 +63,51 @@ class NakhodaIntelligenceTemplate(Document):
 		source: DF.Link | None
 		title: DF.Data
 	# end: auto-generated types
+
+	def apply_patch(self, ops: list[dict]) -> dict:
+		"""Validate `ops` against `PATCH_OPS`, apply them to `panels`, record the
+		prior snapshot on a new `Nakhoda Dashboard Version` row, and persist the
+		result. Returns `{"diff": [...], "version": <name>}` - what the approval
+		screen renders and what a caller passes to `revert` later.
+
+		Admin-gated the same way `api/templates.py`'s import/update endpoints
+		are: a dashboard that anyone could repoint at an arbitrary query would
+		make the approval step decorative.
+		"""
+		frappe.only_for(_ADMIN_ROLES)
+
+		current = frappe.parse_json(self.panels) if self.panels else []
+		new_panels, diff = compile_patch(current, ops)
+
+		version = frappe.get_doc(
+			{
+				"doctype": "Nakhoda Dashboard Version",
+				"dashboard": self.name,
+				"applied_by": frappe.session.user,
+				"applied_on": now_datetime(),
+				"patch_ops": json.dumps(list(ops)),
+				"diff": json.dumps(diff),
+				"prior_panels": json.dumps(current),
+			}
+		)
+		version.insert(ignore_permissions=True)
+
+		self.db_set("panels", json.dumps(new_panels), update_modified=False)
+		return {"diff": diff, "version": version.name}
+
+	def revert(self, version_name: str) -> None:
+		"""Restore `panels` to exactly what `Nakhoda Dashboard Version.
+		prior_panels` recorded before that version's patch applied - a row
+		read back verbatim, not an inverse patch replayed."""
+		frappe.only_for(_ADMIN_ROLES)
+
+		version = frappe.get_doc("Nakhoda Dashboard Version", version_name)
+		if version.get("dashboard") != self.name:
+			frappe.throw(frappe._("{0} does not belong to this dashboard").format(version_name))
+		if version.get("reverted"):
+			frappe.throw(frappe._("{0} has already been reverted").format(version_name))
+
+		self.db_set("panels", version.get("prior_panels"), update_modified=False)
+		version.db_set("reverted", 1, update_modified=False)
+		version.db_set("reverted_by", frappe.session.user, update_modified=False)
+		version.db_set("reverted_on", now_datetime(), update_modified=False)

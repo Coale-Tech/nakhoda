@@ -1,0 +1,149 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-08-13 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "dashboard",
+  "applied_by",
+  "applied_on",
+  "patch_section",
+  "patch_ops",
+  "diff",
+  "prior_panels",
+  "revert_section",
+  "reverted",
+  "reverted_by",
+  "reverted_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "dashboard",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Dashboard",
+   "options": "Nakhoda Intelligence Template",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "applied_by",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Applied By",
+   "options": "User",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "applied_on",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Applied On",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "patch_section",
+   "fieldtype": "Section Break",
+   "label": "Patch"
+  },
+  {
+   "description": "The op list the caller submitted, already validated against `PATCH_OPS` before this row was written - never SQL, never a write, always `add_chart` / `set_filter` / `remove_item`.",
+   "fieldname": "patch_ops",
+   "fieldtype": "JSON",
+   "label": "Patch Ops",
+   "read_only": 1
+  },
+  {
+   "description": "One row per item this patch touched - `i`, `title`, `state` (`added` / `will_change` / `removed`) and `field`. What the approval screen rendered before the caller approved it.",
+   "fieldname": "diff",
+   "fieldtype": "JSON",
+   "label": "Diff",
+   "read_only": 1
+  },
+  {
+   "description": "The dashboard's `panels` exactly as they stood before this patch applied. `revert` writes this back verbatim - restoring a row, not replaying an inverse patch.",
+   "fieldname": "prior_panels",
+   "fieldtype": "JSON",
+   "label": "Prior Panels",
+   "read_only": 1
+  },
+  {
+   "fieldname": "revert_section",
+   "fieldtype": "Section Break",
+   "label": "Revert"
+  },
+  {
+   "default": "0",
+   "description": "Set once `revert` has restored `prior_panels` onto the dashboard. A reverted version cannot be reverted a second time.",
+   "fieldname": "reverted",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Reverted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reverted_by",
+   "fieldtype": "Link",
+   "label": "Reverted By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reverted_on",
+   "fieldtype": "Datetime",
+   "label": "Reverted On",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-13 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nakhoda",
+ "name": "Nakhoda Dashboard Version",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda User"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}
