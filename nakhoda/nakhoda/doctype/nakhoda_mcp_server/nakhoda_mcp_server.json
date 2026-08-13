@@ -1,0 +1,160 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-12 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "space",
+  "enabled",
+  "description",
+  "transport_section",
+  "transport",
+  "command",
+  "args",
+  "url",
+  "timeout_seconds",
+  "status_section",
+  "status",
+  "last_checked",
+  "last_error"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "description": "Which `Nakhoda Space` can reach this server's tools. A server registered on one space is invisible to every other space - there is no bench-wide plugin list.",
+   "fieldname": "space",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Space",
+   "options": "Nakhoda Space",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "description": "Off by default for a newly registered server so a bad configuration can be tested before it is offered to askers.",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "transport_section",
+   "fieldtype": "Section Break",
+   "label": "Transport"
+  },
+  {
+   "default": "Stdio",
+   "fieldname": "transport",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Transport",
+   "options": "Stdio\nStreamable HTTP",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.transport == \"Stdio\"",
+   "description": "Executable to launch. Runs as the bench user's own process, not sandboxed - only register a command from a source you trust as much as any other bench dependency.",
+   "fieldname": "command",
+   "fieldtype": "Data",
+   "label": "Command",
+   "mandatory_depends_on": "eval:doc.transport == \"Stdio\""
+  },
+  {
+   "depends_on": "eval:doc.transport == \"Stdio\"",
+   "description": "One argument per line, in order.",
+   "fieldname": "args",
+   "fieldtype": "Small Text",
+   "label": "Arguments"
+  },
+  {
+   "depends_on": "eval:doc.transport == \"Streamable HTTP\"",
+   "description": "Endpoint the MCP client connects to. Nakhoda sends the asking user's id in an `X-Nakhoda-Asker` header on every request - the server is responsible for honouring it.",
+   "fieldname": "url",
+   "fieldtype": "Data",
+   "label": "URL",
+   "mandatory_depends_on": "eval:doc.transport == \"Streamable HTTP\""
+  },
+  {
+   "default": "10",
+   "fieldname": "timeout_seconds",
+   "fieldtype": "Int",
+   "label": "Timeout (Seconds)"
+  },
+  {
+   "fieldname": "status_section",
+   "fieldtype": "Section Break",
+   "label": "Status"
+  },
+  {
+   "default": "Untested",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Untested\nReachable\nUnreachable",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_checked",
+   "fieldtype": "Datetime",
+   "label": "Last Checked",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_error",
+   "fieldtype": "Small Text",
+   "label": "Last Error",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nakhoda",
+ "name": "Nakhoda MCP Server",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda Admin",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title"
+}
