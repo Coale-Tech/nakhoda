@@ -1,0 +1,225 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-12 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "user",
+  "space",
+  "question",
+  "source",
+  "matched_verified_query",
+  "routing_section",
+  "tier",
+  "tier_reason",
+  "model",
+  "escalated",
+  "escalation_reason",
+  "degraded",
+  "degradation_reason",
+  "result_section",
+  "operations",
+  "sql",
+  "row_count",
+  "execution_time",
+  "status",
+  "error"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "User",
+   "options": "User",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "space",
+   "fieldtype": "Link",
+   "label": "Space",
+   "options": "Nakhoda Space",
+   "read_only": 1
+  },
+  {
+   "fieldname": "question",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Question",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "generated",
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Source",
+   "options": "generated\nverified",
+   "read_only": 1
+  },
+  {
+   "description": "Set when a `Nakhoda Verified Query` answered this question instead of the agent generating one - zero tokens, no routing at all.",
+   "fieldname": "matched_verified_query",
+   "fieldtype": "Link",
+   "label": "Matched Verified Query",
+   "options": "Nakhoda Verified Query",
+   "read_only": 1
+  },
+  {
+   "fieldname": "routing_section",
+   "fieldtype": "Section Break",
+   "label": "Routing"
+  },
+  {
+   "description": "Empty for a verified answer. Otherwise the tier the pipeline was finally generated on, after any escalation or degradation below.",
+   "fieldname": "tier",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Tier",
+   "options": "\nFAST\nBALANCED\nPREMIUM",
+   "read_only": 1
+  },
+  {
+   "description": "The structural reason the *starting* tier was chosen - table count and join need, not a keyword match (`12-build-plan.md` Phase 4). A router that cannot explain its own choice cannot be audited.",
+   "fieldname": "tier_reason",
+   "fieldtype": "Small Text",
+   "label": "Tier Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "label": "Model",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "A higher tier was reached because a lower one's pipeline failed validation. Never set without `escalation_reason` naming that failure - invariant: no escalation without a preceding validation failure.",
+   "fieldname": "escalated",
+   "fieldtype": "Check",
+   "label": "Escalated",
+   "read_only": 1
+  },
+  {
+   "fieldname": "escalation_reason",
+   "fieldtype": "Small Text",
+   "label": "Escalation Reason",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "A higher tier was reached because every model in a lower one was unavailable (quota or errors), not because its output was invalid.",
+   "fieldname": "degraded",
+   "fieldtype": "Check",
+   "label": "Degraded",
+   "read_only": 1
+  },
+  {
+   "fieldname": "degradation_reason",
+   "fieldtype": "Small Text",
+   "label": "Degradation Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result_section",
+   "fieldtype": "Section Break",
+   "label": "Result"
+  },
+  {
+   "description": "The pipeline that answered the question - generated, or copied from the matched verified query. The artifact that is auditable and re-runnable.",
+   "fieldname": "operations",
+   "fieldtype": "Code",
+   "label": "Operations",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "description": "The compiled SQL actually executed, permission filters already inlined.",
+   "fieldname": "sql",
+   "fieldtype": "Code",
+   "label": "SQL",
+   "options": "SQL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "row_count",
+   "fieldtype": "Int",
+   "label": "Rows Returned",
+   "read_only": 1
+  },
+  {
+   "fieldname": "execution_time",
+   "fieldtype": "Float",
+   "label": "Execution Time (Seconds)",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "default": "ok",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "ok\nerror",
+   "read_only": 1
+  },
+  {
+   "description": "Set only on `status = error`. The agent never raises to the caller (`12-build-plan.md` Phase 4, point 3) - every terminal state is a value carrying this instead.",
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nakhoda",
+ "name": "Nakhoda Agent Run",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "if_owner": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda User"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}
