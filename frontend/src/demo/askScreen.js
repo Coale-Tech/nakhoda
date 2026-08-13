@@ -58,6 +58,80 @@ export const turns = [
 					{ html: "<b>$0.0031</b>" },
 				],
 			},
+			// Mirrors `docs/design/mockup/index.html` lines 741-836 (`data-insp="ask"`).
+			// `editable` is false only on the injected permission filter - that step is
+			// not the user's to change, so it carries no "Edit" affordance at all.
+			inspector: {
+				pipeline: [
+					{ kind: "source", origin: "question", expr: "tabSales Invoice", editable: true },
+					{ kind: "filter", origin: "model", expr: "docstatus == 1", editable: true },
+					{
+						kind: "filter",
+						origin: "model",
+						expr: "is_return == 0\nposting_date >= '2026-01-01'",
+						editable: true,
+					},
+					{
+						kind: "join",
+						origin: "link",
+						expr: "tabCustomer on customer == name\n→ territory",
+						editable: true,
+					},
+					{
+						kind: "summarize",
+						origin: "question",
+						expr: "sum(base_net_total) by territory\norder desc",
+						editable: true,
+					},
+					{
+						kind: "permission filter",
+						origin: "injected",
+						expr: "User Permission: Territory in (India,\nUnited States) → tree descendants →\n(Karnataka, Maharashtra, California, Texas)",
+						editable: false,
+					},
+				],
+				sql: {
+					html:
+						'<span class="c">-- not executed yet · 5 operations compiled</span>\n' +
+						'<span class="k">SELECT</span> c.<span class="n">territory</span>,\n' +
+						'       <span class="k">SUM</span>(si.<span class="n">base_net_total</span>) <span class="k">AS</span> revenue\n' +
+						'<span class="k">FROM</span> <span class="s">&quot;tabSales Invoice&quot;</span> si\n' +
+						'<span class="k">JOIN</span> <span class="s">&quot;tabCustomer&quot;</span> c <span class="k">ON</span> c.name = si.customer\n' +
+						'<span class="k">WHERE</span> si.docstatus = 1\n' +
+						'  <span class="k">AND</span> si.is_return = 0\n' +
+						"  <span class=\"k\">AND</span> si.posting_date &gt;= <span class=\"s\">'2026-01-01'</span>\n" +
+						'  <span class="inj">AND c.territory IN (…4 permitted)</span>\n' +
+						'<span class="k">GROUP BY</span> c.<span class="n">territory</span>\n' +
+						'<span class="k">ORDER BY</span> revenue <span class="k">DESC</span>\n' +
+						'<span class="k">LIMIT</span> 10000',
+					plain:
+						"-- not executed yet · 5 operations compiled\n" +
+						"SELECT c.territory,\n" +
+						"       SUM(si.base_net_total) AS revenue\n" +
+						'FROM "tabSales Invoice" si\n' +
+						'JOIN "tabCustomer" c ON c.name = si.customer\n' +
+						"WHERE si.docstatus = 1\n" +
+						"  AND si.is_return = 0\n" +
+						"  AND si.posting_date >= '2026-01-01'\n" +
+						"  AND c.territory IN (…4 permitted)\n" +
+						"GROUP BY c.territory\n" +
+						"ORDER BY revenue DESC\n" +
+						"LIMIT 10000",
+				},
+				sqlNote:
+					"The highlighted line was <b>injected, not generated</b>. It comes from your Frappe User " +
+					"Permissions, is compiled into the query before execution, and cannot be removed by anything " +
+					"you or the model type into the prompt.",
+				scope: [
+					{ label: "Rows scanned", value: "712" },
+					{ label: "Rows excluded by permissions", value: "232", color: "var(--ink-blue-text)" },
+					{ label: "Row cap", value: "10,000" },
+					{ label: "Query time", value: "0.41s" },
+					{ label: "Tokens in / out", value: "1,038 / 166" },
+					{ label: "Cost", value: "$0.0031" },
+					{ label: "Semantic model", value: "sm-2026.08.09-a4f1", mono: true },
+				],
+			},
 		},
 	},
 	{

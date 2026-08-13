@@ -49,6 +49,11 @@ body {
 	cursor: pointer;
 	white-space: nowrap;
 }
+.btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+	pointer-events: none;
+}
 .btn:hover {
 	background: var(--surface-gray-2);
 }

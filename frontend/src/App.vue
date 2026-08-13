@@ -1,58 +1,103 @@
 <script setup>
+import { ref } from "vue";
 import IconSprite from "./components/IconSprite.vue";
 import Turn from "./components/Turn.vue";
+import Inspector from "./components/Inspector.vue";
 import { turns } from "./demo/askScreen.js";
+
+// Single reused inspector (`14-frontend-design.md` §2 / `app.css` `#inspector`)
+// - one `<aside>`, its section content swaps per turn rather than one
+// instance per answer card.
+const inspectingId = ref(null);
+const inspecting = ref(false);
+
+function openInspector(id) {
+	inspectingId.value = id;
+	inspecting.value = true;
+}
+function closeInspector() {
+	inspecting.value = false;
+}
+function onRerun({ edits }) {
+	// Phase 5 is UI-only: there is no live agent behind this yet (Phase 4's
+	// `execute`/`run_verified` endpoints are the future wiring point noted in
+	// askScreen.js). Re-run is real at the UI layer - the edited operations
+	// are captured and the pipeline reflects them - without touching the
+	// composer, which is the gate this exists to satisfy.
+	console.info("nakhoda: pipeline re-run requested", edits);
+}
 </script>
 
 <template>
 	<IconSprite />
 	<div class="shell">
-		<div class="scroll">
-			<div class="page">
-				<Turn v-for="t in turns" :key="t.id" :turn="t">
-					<template v-if="t.kind === 'generated'" #receipt-actions>
-						<button class="btn btn-sm">Inspect {{ t.answer.stepCount }} steps</button>
-						<button class="btn btn-sm">Mark verified</button>
-					</template>
-					<template v-else #receipt-actions>
-						<button class="btn btn-sm">View definition</button>
-					</template>
-				</Turn>
+		<div class="main">
+			<div class="scroll">
+				<div class="page">
+					<Turn v-for="t in turns" :key="t.id" :turn="t">
+						<template v-if="t.kind === 'generated'" #receipt-actions>
+							<button class="btn btn-sm" @click="openInspector(t.id)">Inspect {{ t.answer.stepCount }} steps</button>
+							<button class="btn btn-sm">Mark verified</button>
+						</template>
+						<template v-else #receipt-actions>
+							<button class="btn btn-sm">View definition</button>
+						</template>
+					</Turn>
+				</div>
 			</div>
-		</div>
 
-		<div class="composer-wrap">
-			<div class="composer">
-				<div
-					class="composer-input"
-					contenteditable="true"
-					data-placeholder="Ask about Finance &amp; Sales…"
-				></div>
-				<div class="composer-foot">
-					<span class="scope"
-						><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-model" /></svg>41
-						tables</span
-					>
-					<span class="scope"
-						><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-lock" /></svg>Your
-						permissions</span
-					>
-					<span class="scope"
-						><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-play" /></svg>Dry-run
-						first</span
-					>
-					<button class="btn btn-primary">Ask <span class="kbd">↵</span></button>
+			<div class="composer-wrap">
+				<div class="composer">
+					<div
+						class="composer-input"
+						contenteditable="true"
+						data-placeholder="Ask about Finance &amp; Sales…"
+					></div>
+					<div class="composer-foot">
+						<span class="scope"
+							><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-model" /></svg>41
+							tables</span
+						>
+						<span class="scope"
+							><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-lock" /></svg>Your
+							permissions</span
+						>
+						<span class="scope"
+							><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-play" /></svg>Dry-run
+							first</span
+						>
+						<button class="btn btn-primary">Ask <span class="kbd">↵</span></button>
+					</div>
 				</div>
 			</div>
 		</div>
+
+		<Inspector
+			v-for="t in turns.filter((t) => t.answer.inspector)"
+			v-show="inspecting && inspectingId === t.id"
+			:key="'insp-' + t.id"
+			:open="inspecting && inspectingId === t.id"
+			title="Inspect answer"
+			:pipeline="t.answer.inspector.pipeline"
+			:sql="t.answer.inspector.sql"
+			:sql-note="t.answer.inspector.sqlNote"
+			:scope="t.answer.inspector.scope"
+			@close="closeInspector"
+			@rerun="onRerun"
+		/>
 	</div>
 </template>
 
 <style scoped>
 .shell {
 	display: flex;
-	flex-direction: column;
 	height: 100vh;
+}
+.main {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
 }
 .scroll {
 	flex: 1;

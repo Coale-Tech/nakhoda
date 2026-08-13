@@ -1,4 +1,5 @@
 <script setup>
+import { ref, watch } from "vue";
 import OriginBadge from "./OriginBadge.vue";
 
 /**
@@ -8,16 +9,33 @@ import OriginBadge from "./OriginBadge.vue";
  * *pipeline* rather than a bag of steps - `.op-line` is hidden on the last
  * row by `:last-child`, driven here by the `last` prop since Vue components
  * don't get sibling CSS selectors for free across component boundaries.
+ *
+ * `editable` rows (source/filter/join/summarize - never the permission
+ * filter, which is injected and not the user's to change) open an inline
+ * textarea on "Edit" and emit `save` with the new text on confirm. This is
+ * Phase 5's gate: a wrong step is corrected *here*, not by retyping the
+ * question in the composer - `save`/`cancel` never touch it.
  */
-defineProps({
+const props = defineProps({
 	index: { type: Number, required: true },
 	kind: { type: String, required: true },
 	origin: { type: String, required: true },
 	expr: { type: String, default: "" },
 	last: { type: Boolean, default: false },
+	editable: { type: Boolean, default: false },
+	editing: { type: Boolean, default: false },
+	edited: { type: Boolean, default: false },
 });
 
-defineEmits(["edit"]);
+const emit = defineEmits(["edit", "save", "cancel"]);
+
+const draft = ref(props.expr);
+watch(
+	() => props.editing,
+	(now) => {
+		if (now) draft.value = props.expr;
+	},
+);
 </script>
 
 <template>
@@ -30,10 +48,18 @@ defineEmits(["edit"]);
 			<div class="op-kind">
 				<span>{{ kind }}</span>
 				<OriginBadge :origin="origin" />
+				<span v-if="edited" class="op-edited">edited</span>
 			</div>
-			<div v-if="expr" class="op-expr">{{ expr }}</div>
+			<div v-if="expr && !editing" class="op-expr">{{ expr }}</div>
+			<div v-if="editing" class="op-edit-form">
+				<textarea class="op-edit-input" v-model="draft" rows="3" />
+				<div class="op-edit-actions">
+					<button class="btn btn-sm" @click="$emit('cancel', index)">Cancel</button>
+					<button class="btn btn-sm btn-primary" @click="$emit('save', { index, expr: draft })">Save</button>
+				</div>
+			</div>
 		</div>
-		<span class="op-edit" @click="$emit('edit', index)">Edit</span>
+		<span v-if="editable && !editing" class="op-edit" @click="$emit('edit', index)">Edit</span>
 	</div>
 </template>
 
@@ -89,6 +115,16 @@ defineEmits(["edit"]);
 	align-items: center;
 	gap: 7px;
 }
+.op-edited {
+	font-size: 10px;
+	font-weight: var(--weight-medium);
+	padding: 1px 5px;
+	border-radius: var(--border-radius-tiny);
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+	background: var(--surface-amber-1);
+	color: var(--ink-amber-text);
+}
 .op-expr {
 	font-family: var(--font-mono);
 	font-size: 11px;
@@ -96,6 +132,7 @@ defineEmits(["edit"]);
 	margin-top: 3px;
 	line-height: 1.5;
 	word-break: break-word;
+	white-space: pre-line;
 }
 .op-edit {
 	position: absolute;
@@ -108,5 +145,26 @@ defineEmits(["edit"]);
 }
 .op:hover .op-edit {
 	opacity: 1;
+}
+.op-edit-form {
+	margin-top: 4px;
+}
+.op-edit-input {
+	width: 100%;
+	font-family: var(--font-mono);
+	font-size: 11px;
+	line-height: 1.5;
+	color: var(--ink-gray-8);
+	background: var(--surface-white);
+	border: 1px solid var(--outline-gray-3);
+	border-radius: var(--border-radius-sm);
+	padding: 6px 8px;
+	resize: vertical;
+}
+.op-edit-actions {
+	display: flex;
+	gap: 6px;
+	justify-content: flex-end;
+	margin-top: 6px;
 }
 </style>

@@ -17,7 +17,7 @@ const ORIGINS = {
 };
 
 const props = defineProps({
-	origin: { type: String, required: true, validator: (v) => v in ORIGINS },
+	origin: { type: String, required: true, validator: (v) => ["question", "model", "link", "injected"].includes(v) },
 });
 </script>
 
