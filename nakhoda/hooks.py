@@ -30,6 +30,18 @@ add_to_apps_screen = [
 	}
 ]
 
+# Website Route Rules
+# --------------------
+# `www/_nakhoda.html` is the underscore-prefixed convention (mirrors Insights'
+# `_insights.html`); without this mapping frappe only serves it at literal
+# `/_nakhoda`, not the public `/nakhoda` route the app-switcher tile and
+# workspace shortcut link to.
+
+website_route_rules = [
+	{"from_route": "/nakhoda", "to_route": "_nakhoda"},
+	{"from_route": "/nakhoda/<path:app_path>", "to_route": "_nakhoda"},
+]
+
 # Includes in <head>
 # ------------------
 
