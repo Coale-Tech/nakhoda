@@ -197,14 +197,19 @@ after_migrate = "nakhoda.api.templates.sync_intelligence_template_updates"
 
 # Fixtures
 # --------
-# The sidebar entry point: one `Workspace` record, `nakhoda/fixtures/workspace.json`.
+# The sidebar entry point: one `Workspace` record, shipped as the standard
+# on-disk module doc `nakhoda/nakhoda/workspace/nakhoda/nakhoda.json` (like
+# every other app's workspaces - see `hrms/hr/workspace/*/`), not a fixture.
+# frappe v16's `remove_orphan_entities` (`model/sync.py`) deletes any public
+# Workspace record with no matching on-disk `**/workspace/**/*.json` on every
+# migrate - a pure-fixture Workspace fails that check and gets deleted right
+# after fixture sync recreates it. The module doc is picked up by the same
+# `IMPORTABLE_DOCTYPES` sync as every other app's workspaces, on every
+# frappe version, and satisfies the v16 check by construction.
+#
 # It only deep-links into `/nakhoda` (the SPA) plus a few admin shortcuts - the
 # product's whole point is the single Ask surface, not a desk CRUD app; see
 # docs/design/14-frontend-design.md - section 4.
-
-fixtures = [
-	{"doctype": "Workspace", "filters": [["name", "=", "Nakhoda"]]},
-]
 
 # Testing
 # -------
