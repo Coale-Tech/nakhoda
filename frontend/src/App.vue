@@ -1,9 +1,32 @@
 <script setup>
-import { ref } from "vue";
+import { nextTick, ref } from "vue";
 import IconSprite from "./components/IconSprite.vue";
 import Turn from "./components/Turn.vue";
+import ErrorTurn from "./components/ErrorTurn.vue";
 import Inspector from "./components/Inspector.vue";
-import { turns } from "./demo/askScreen.js";
+import { askQuestion } from "./agent.js";
+
+// Live conversation state - no demo data. `nakhoda.api.agent.ask` is called
+// per question (`src/agent.js`); `turns` only ever holds what that endpoint,
+// and the `Nakhoda Agent Run` it writes, actually returned.
+const turns = ref([]);
+const pending = ref(false);
+const composerEl = ref(null);
+const scrollEl = ref(null);
+
+async function submit() {
+	const question = composerEl.value?.innerText.trim();
+	if (!question || pending.value) return;
+	pending.value = true;
+	composerEl.value.textContent = "";
+	try {
+		turns.value.push(await askQuestion(question));
+	} finally {
+		pending.value = false;
+	}
+	await nextTick();
+	if (scrollEl.value) scrollEl.value.scrollTop = scrollEl.value.scrollHeight;
+}
 
 // Single reused inspector (`14-frontend-design.md` §2 / `app.css` `#inspector`)
 // - one `<aside>`, its section content swaps per turn rather than one
@@ -19,11 +42,10 @@ function closeInspector() {
 	inspecting.value = false;
 }
 function onRerun({ edits }) {
-	// Phase 5 is UI-only: there is no live agent behind this yet (Phase 4's
-	// `execute`/`run_verified` endpoints are the future wiring point noted in
-	// askScreen.js). Re-run is real at the UI layer - the edited operations
-	// are captured and the pipeline reflects them - without touching the
-	// composer, which is the gate this exists to satisfy.
+	// The inspector's "Edit & re-run" is UI-only: it recompiles nothing
+	// against the real engine (`src/agent.js` marks every real operation row
+	// `editable: false` for exactly this reason - editing here would silently
+	// do nothing to the answer above it).
 	console.info("nakhoda: pipeline re-run requested", edits);
 }
 </script>
@@ -32,26 +54,31 @@ function onRerun({ edits }) {
 	<IconSprite />
 	<div class="shell">
 		<div class="main">
-			<div class="scroll">
+			<div class="scroll" ref="scrollEl">
 				<div class="page">
-					<Turn v-for="t in turns" :key="t.id" :turn="t">
-						<template v-if="t.kind === 'generated'" #receipt-actions>
-							<button class="btn btn-sm" @click="openInspector(t.id)">Inspect {{ t.answer.stepCount }} steps</button>
-							<button class="btn btn-sm">Mark verified</button>
-						</template>
-						<template v-else #receipt-actions>
-							<button class="btn btn-sm">View definition</button>
-						</template>
-					</Turn>
+					<template v-for="t in turns" :key="t.id">
+						<ErrorTurn v-if="t.error" :turn="t" />
+						<Turn v-else :turn="t">
+							<template v-if="t.kind === 'generated'" #receipt-actions>
+								<button class="btn btn-sm" @click="openInspector(t.id)">Inspect {{ t.answer.stepCount }} steps</button>
+								<button class="btn btn-sm">Mark verified</button>
+							</template>
+							<template v-else #receipt-actions>
+								<button class="btn btn-sm">View definition</button>
+							</template>
+						</Turn>
+					</template>
 				</div>
 			</div>
 
 			<div class="composer-wrap">
 				<div class="composer">
 					<div
+						ref="composerEl"
 						class="composer-input"
-						contenteditable="true"
+						:contenteditable="!pending"
 						data-placeholder="Ask about Finance &amp; Sales…"
+						@keydown.enter.exact.prevent="submit"
 					></div>
 					<div class="composer-foot">
 						<span class="scope"
@@ -66,14 +93,16 @@ function onRerun({ edits }) {
 							><svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><use href="#i-play" /></svg>Dry-run
 							first</span
 						>
-						<button class="btn btn-primary">Ask <span class="kbd">↵</span></button>
+						<button class="btn btn-primary" :disabled="pending" @click="submit">
+							{{ pending ? "Asking…" : "Ask" }} <span v-if="!pending" class="kbd">↵</span>
+						</button>
 					</div>
 				</div>
 			</div>
 		</div>
 
 		<Inspector
-			v-for="t in turns.filter((t) => t.answer.inspector)"
+			v-for="t in turns.filter((t) => t.answer?.inspector)"
 			v-show="inspecting && inspectingId === t.id"
 			:key="'insp-' + t.id"
 			:open="inspecting && inspectingId === t.id"

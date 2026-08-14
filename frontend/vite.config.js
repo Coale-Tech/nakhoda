@@ -1,20 +1,28 @@
 import vue from "@vitejs/plugin-vue";
 import path from "path";
+import frappeui from "frappe-ui/vite";
 import { defineConfig } from "vite";
 
-// No frappe-ui proxy/jinja plugin here on purpose: Phase 5 ships the Ask
-// screen's rendering surface (inspector, chart, badges, answer card) against
-// demo data shaped exactly like `nakhoda.agent.manager.ask()`'s real return
-// contract (see `src/demo/`). Wiring the composer to the live `/api/method/
-// nakhoda.api.agent.ask` endpoint is Phase 8's job, not this one's - the four
-// gates in `14-frontend-design.md` are about what renders, not about calling
-// a real site.
+// `frappeProxy` proxies /api,/app,/login,... to the bench during `yarn dev`;
+// `jinjaBootData` injects the `{% for key in boot %}...{% endfor %}` block
+// this app's `www/_nakhoda.py` feeds (`context.boot`), which is how the SPA
+// gets `window.csrf_token` for `src/callApi.js`'s `call()`. `buildConfig`
+// stays off: the `build` script below (and the `www/_nakhoda.html` copy
+// step in `package.json`) already owns `outDir`/`base`, and frappeui's own
+// build config plugin would fight it. `frappe-ui`'s Vue component barrel
+// (its default export) is never imported at runtime - see `callApi.js` -
+// so its own internal dependencies (icons, vue-router, ...) never enter
+// this bundle.
 export default defineConfig({
-	plugins: [vue()],
-	server: {
-		port: 5177,
-		strictPort: true,
-	},
+	plugins: [
+		frappeui({
+			frappeProxy: true,
+			lucideIcons: false,
+			jinjaBootData: true,
+			buildConfig: false,
+		}),
+		vue(),
+	],
 	resolve: {
 		alias: {
 			"@": path.resolve(__dirname, "src"),

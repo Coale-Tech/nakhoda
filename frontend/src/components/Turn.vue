@@ -11,12 +11,13 @@ import Receipt from "./Receipt.vue";
 import Trace from "./Trace.vue";
 
 /**
- * One question + answer, shaped exactly like `src/demo/askScreen.js`
- * (itself shaped like `Nakhoda Agent Run` / `Nakhoda Verified Query`).
- * Renders whichever optional sections the turn's `answer` actually has:
- * `chart` XOR `table`, `assumptions` and `notice` only on the generated
- * path - a verified answer has neither, per `12-build-plan.md` Phase 3's
- * "no ambiguity" gate.
+ * One question + answer. `turn` is either a live result from
+ * `nakhoda.api.agent.ask` (mapped by `src/agent.js`) or, in tests/stories,
+ * anything shaped the same way. Renders whichever optional sections
+ * `answer` actually has: `chart` XOR `table`, `assumptions` and `notice`
+ * only on the generated path - a verified answer has neither, per
+ * `12-build-plan.md` Phase 3's "no ambiguity" gate. Failed turns never
+ * reach this component - see `ErrorTurn.vue`.
  */
 defineProps({
 	turn: { type: Object, required: true },
