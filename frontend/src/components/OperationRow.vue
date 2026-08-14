@@ -1,20 +1,26 @@
 <script setup>
 import { ref, watch } from "vue";
+import { Button, Textarea } from "frappe-ui";
 import OriginBadge from "./OriginBadge.vue";
 
 /**
  * One step of the operation pipeline the inspector renders (`14-frontend-
- * design.md` §2, ported from `app.css` `.op`/`.op-rail`/`.op-body`). The
- * numbered rail with a connecting line is what makes this read as a
- * *pipeline* rather than a bag of steps - `.op-line` is hidden on the last
- * row by `:last-child`, driven here by the `last` prop since Vue components
- * don't get sibling CSS selectors for free across component boundaries.
+ * design.md` §2). The numbered rail with a connecting line is what makes
+ * this read as a *pipeline* rather than a bag of steps - the line is hidden
+ * on the last row via the `last` prop, since Vue components don't get
+ * sibling CSS selectors for free across component boundaries.
  *
  * `editable` rows (source/filter/join/summarize - never the permission
  * filter, which is injected and not the user's to change) open an inline
  * textarea on "Edit" and emit `save` with the new text on confirm. This is
  * Phase 5's gate: a wrong step is corrected *here*, not by retyping the
  * question in the composer - `save`/`cancel` never touch it.
+ *
+ * `Edit` / `Cancel` / `Save` are frappe-ui Buttons, so the hover-revealed
+ * action is a real focusable button rather than a blue-tinted span; the edit
+ * field is a frappe-ui Textarea, which puts the passed class straight on the
+ * `<textarea>` element (no label slot in play), keeping `.op-edit-input` a
+ * fillable node for `correction.spec.js`.
  */
 const props = defineProps({
 	index: { type: Number, required: true },
@@ -39,132 +45,55 @@ watch(
 </script>
 
 <template>
-	<div class="op">
-		<div class="op-rail">
-			<span class="op-n num">{{ index }}</span>
-			<span v-if="!last" class="op-line" />
+	<div class="op group relative -mx-2 flex gap-2.5 rounded-sm p-2 hover:bg-surface-gray-2">
+		<div class="op-rail flex flex-none flex-col items-center">
+			<span
+				class="op-n grid size-[18px] place-items-center rounded-full bg-surface-gray-3 text-[10px] font-semibold tabular-nums text-ink-gray-6 group-hover:bg-surface-gray-4"
+			>
+				{{ index }}
+			</span>
+			<span v-if="!last" class="op-line -mb-2 mt-[3px] w-px flex-1 bg-outline-gray-2" />
 		</div>
-		<div class="op-body">
-			<div class="op-kind">
+		<div class="op-body min-w-0 flex-1 pb-1">
+			<div class="op-kind text-xs-semibold flex items-center gap-1.5 text-ink-gray-9">
 				<span>{{ kind }}</span>
 				<OriginBadge :origin="origin" />
-				<span v-if="edited" class="op-edited">edited</span>
+				<span
+					v-if="edited"
+					class="op-edited rounded-sm bg-surface-amber-1 px-1.5 py-px text-[10px] font-medium uppercase tracking-[0.03em] text-ink-amber-9"
+				>
+					edited
+				</span>
 			</div>
-			<div v-if="expr && !editing" class="op-expr">{{ expr }}</div>
-			<div v-if="editing" class="op-edit-form">
-				<textarea class="op-edit-input" v-model="draft" rows="3" />
-				<div class="op-edit-actions">
-					<button class="btn btn-sm" @click="$emit('cancel', index)">Cancel</button>
-					<button class="btn btn-sm btn-primary" @click="$emit('save', { index, expr: draft })">Save</button>
+			<div v-if="expr && !editing" class="op-expr mt-1 whitespace-pre-line break-words font-mono text-[11px] text-ink-gray-6">
+				{{ expr }}
+			</div>
+			<div v-if="editing" class="mt-1">
+				<Textarea
+					v-model="draft"
+					class="op-edit-input font-mono !text-[11px]"
+					variant="outline"
+					:rows="3"
+				/>
+				<div class="mt-1.5 flex justify-end gap-1.5">
+					<Button variant="subtle" size="sm" label="Cancel" @click="$emit('cancel', index)" />
+					<Button
+						variant="solid"
+						theme="gray"
+						size="sm"
+						label="Save"
+						@click="$emit('save', { index, expr: draft })"
+					/>
 				</div>
 			</div>
 		</div>
-		<span v-if="editable && !editing" class="op-edit" @click="$emit('edit', index)">Edit</span>
+		<Button
+			v-if="editable && !editing"
+			class="op-edit absolute right-2 top-2 opacity-0 group-hover:opacity-100"
+			variant="ghost"
+			size="sm"
+			label="Edit"
+			@click="$emit('edit', index)"
+		/>
 	</div>
 </template>
-
-<style scoped>
-.op {
-	display: flex;
-	gap: 10px;
-	padding: 8px;
-	margin: 0 -8px;
-	border-radius: var(--border-radius-sm);
-	cursor: pointer;
-	position: relative;
-}
-.op:hover {
-	background: var(--surface-gray-2);
-}
-.op-rail {
-	flex: none;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-}
-.op-n {
-	width: 18px;
-	height: 18px;
-	border-radius: var(--border-radius-full);
-	background: var(--surface-gray-3);
-	color: var(--ink-gray-6);
-	font-size: 10px;
-	font-weight: var(--weight-semibold);
-	display: grid;
-	place-items: center;
-}
-.op:hover .op-n {
-	background: var(--surface-gray-4);
-}
-.op-line {
-	width: 1px;
-	flex: 1;
-	background: var(--outline-gray-2);
-	margin: 3px 0 -8px;
-}
-.op-body {
-	flex: 1;
-	min-width: 0;
-	padding-bottom: 3px;
-}
-.op-kind {
-	font-size: var(--text-xs);
-	font-weight: var(--weight-semibold);
-	color: var(--ink-gray-9);
-	display: flex;
-	align-items: center;
-	gap: 7px;
-}
-.op-edited {
-	font-size: 10px;
-	font-weight: var(--weight-medium);
-	padding: 1px 5px;
-	border-radius: var(--border-radius-tiny);
-	text-transform: uppercase;
-	letter-spacing: 0.03em;
-	background: var(--surface-amber-1);
-	color: var(--ink-amber-text);
-}
-.op-expr {
-	font-family: var(--font-mono);
-	font-size: 11px;
-	color: var(--ink-gray-6);
-	margin-top: 3px;
-	line-height: 1.5;
-	word-break: break-word;
-	white-space: pre-line;
-}
-.op-edit {
-	position: absolute;
-	right: 8px;
-	top: 8px;
-	opacity: 0;
-	font-size: var(--text-tiny);
-	color: var(--ink-blue-text);
-	font-weight: var(--weight-medium);
-}
-.op:hover .op-edit {
-	opacity: 1;
-}
-.op-edit-form {
-	margin-top: 4px;
-}
-.op-edit-input {
-	width: 100%;
-	font-family: var(--font-mono);
-	font-size: 11px;
-	line-height: 1.5;
-	color: var(--ink-gray-8);
-	background: var(--surface-white);
-	border: 1px solid var(--outline-gray-3);
-	border-radius: var(--border-radius-sm);
-	padding: 6px 8px;
-	resize: vertical;
-}
-.op-edit-actions {
-	display: flex;
-	gap: 6px;
-	justify-content: flex-end;
-	margin-top: 6px;
-}
-</style>

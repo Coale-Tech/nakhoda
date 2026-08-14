@@ -1,20 +1,26 @@
 <script setup>
 import { computed, reactive, ref } from "vue";
+import { Button, ScrollArea } from "frappe-ui";
 import OperationRow from "./OperationRow.vue";
 import SqlBlock from "./SqlBlock.vue";
 import KvList from "./KvList.vue";
 
 /**
- * The slide-out inspector (`14-frontend-design.md` §2, `app.css`
- * `.inspector`/`.insp-*`). One instance, reused across turns - the mockup's
- * `#inspector` is likewise a single `<aside>` whose section content swaps
- * per turn rather than one inspector per answer card.
+ * The slide-out inspector (`14-frontend-design.md` §2). One instance, reused
+ * across turns - the mockup's `#inspector` is likewise a single `<aside>`
+ * whose section content swaps per turn rather than one inspector per answer
+ * card.
  *
  * Phase 5's first gate: "every operation inspectable and editable, and a
  * user can correct one wrong step and re-run without retyping the
  * question." The composer is a sibling of this component, not a child or
  * an ancestor - `rerun` carries only the edited operations, so there is no
  * code path back through it.
+ *
+ * The panel sits on `surface-base` (not `elevation-1`) so the tinted section
+ * boxes inside it - `surface-gray-1` hints, the green re-run confirmation -
+ * still read as raised in dark mode, where `elevation-1` and `gray-1` are
+ * the same step.
  */
 const props = defineProps({
 	open: { type: Boolean, default: false },
@@ -32,6 +38,7 @@ const edits = reactive({});
 const lastRerun = ref(null);
 
 const hasEdits = computed(() => Object.keys(edits).length > 0);
+const canEdit = computed(() => props.pipeline.some((op) => op.editable));
 
 function startEdit(i) {
 	editingIndex.value = i;
@@ -51,18 +58,35 @@ function rerun() {
 </script>
 
 <template>
-	<aside class="inspector" :hidden="!open">
-		<div class="insp-head">
-			<span class="insp-title">{{ title }}</span>
-			<button class="btn btn-ghost btn-sm" @click="$emit('close')">Close</button>
+	<aside
+		class="inspector flex w-[452px] flex-none flex-col border-l border-outline-gray-2 bg-surface-base"
+		:hidden="!open"
+	>
+		<div class="flex h-12 flex-none items-center gap-2 border-b border-outline-gray-1 pl-4 pr-3">
+			<span class="text-sm-semibold text-ink-gray-9">{{ title }}</span>
+			<Button class="ml-auto" variant="ghost" icon="lucide-x" label="Close" @click="$emit('close')" />
 		</div>
-		<div class="insp-scroll">
-			<div class="insp-section">
-				<h5>
+
+		<ScrollArea class="min-h-0 flex-1">
+			<div class="border-b border-outline-gray-1 px-4 py-3.5">
+				<h5 class="text-tiny-semibold mb-2.5 flex items-center gap-1.5 text-ink-gray-6">
 					Operation pipeline
-					<button class="btn btn-sm" :disabled="!hasEdits" @click="rerun">Edit &amp; re-run</button>
+					<!-- Only offered when some step is actually editable. `src/agent.js`
+					     marks every operation `editable: false` today (no engine surface
+					     accepts an edited pipeline), which would otherwise leave a
+					     permanently disabled control promising a correction path that
+					     cannot exist. -->
+					<Button
+						v-if="canEdit"
+						class="ml-auto"
+						variant="subtle"
+						size="sm"
+						label="Edit & re-run"
+						:disabled="!hasEdits"
+						@click="rerun"
+					/>
 				</h5>
-				<div class="pipe">
+				<div class="flex flex-col">
 					<OperationRow
 						v-for="(op, i) in pipeline"
 						:key="i"
@@ -79,7 +103,10 @@ function rerun() {
 						@save="saveEdit"
 					/>
 				</div>
-				<div v-if="lastRerun" class="rerun-hint">
+				<div
+					v-if="lastRerun"
+					class="rerun-hint mt-2.5 rounded-sm border border-outline-green-1 bg-surface-green-1 px-2.5 py-2 text-xs text-ink-green-9"
+				>
 					Recompiled from {{ lastRerun.count }} edited step{{ lastRerun.count > 1 ? "s" : "" }} and re-run - the
 					question above was never retyped.
 				</div>
@@ -87,103 +114,29 @@ function rerun() {
 
 			<SqlBlock v-if="sql" :html="sql.html" :plain="sql.plain">
 				<template #note>
-					<div v-if="sqlNote" class="hint" style="margin-top: 10px" v-html="sqlNote" />
+					<div
+						v-if="sqlNote"
+						class="mt-2.5 rounded-sm border border-outline-gray-1 bg-surface-gray-1 px-3 py-2.5 text-xs text-ink-gray-6 [&_b]:font-medium [&_b]:text-ink-gray-8"
+						v-html="sqlNote"
+					/>
 				</template>
 			</SqlBlock>
 
-			<div v-if="scope.length" class="insp-section">
-				<h5>Cost &amp; scope</h5>
+			<div v-if="scope.length" class="border-b border-outline-gray-1 px-4 py-3.5">
+				<h5 class="text-tiny-semibold mb-2.5 text-ink-gray-6">Cost &amp; scope</h5>
 				<KvList :rows="scope" />
 			</div>
 
-			<div class="insp-section" style="border-bottom: none">
-				<h5>Turn log</h5>
-				<div class="hint">
+			<div class="px-4 py-3.5">
+				<h5 class="text-tiny-semibold mb-2.5 text-ink-gray-6">Turn log</h5>
+				<div
+					class="rounded-sm border border-outline-gray-1 bg-surface-gray-1 px-3 py-2.5 text-p-xs text-ink-gray-6"
+				>
 					Prompt, tool calls, operations, SQL, row count, tokens and cost are persisted per turn on
-					<code class="mono">Nakhoda Query</code>. Retained for audit - this is the artifact, not a scroll-back
-					buffer.
+					<code class="font-mono text-ink-gray-8">Nakhoda Agent Run</code>. Retained for audit - this is the
+					artifact, not a scroll-back buffer.
 				</div>
 			</div>
-		</div>
+		</ScrollArea>
 	</aside>
 </template>
-
-<style scoped>
-.inspector {
-	width: 452px;
-	flex: none;
-	border-left: 1px solid var(--outline-gray-2);
-	background: var(--surface-white);
-	display: flex;
-	flex-direction: column;
-}
-.inspector[hidden] {
-	display: none;
-}
-.insp-head {
-	height: 48px;
-	flex: none;
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 0 12px 0 16px;
-	border-bottom: 1px solid var(--outline-gray-1);
-}
-.insp-title {
-	font-size: var(--text-sm);
-	font-weight: var(--weight-semibold);
-	color: var(--ink-gray-9);
-}
-.insp-head .btn {
-	margin-left: auto;
-}
-.insp-scroll {
-	flex: 1;
-	overflow-y: auto;
-}
-.insp-section {
-	border-bottom: 1px solid var(--outline-gray-1);
-	padding: 14px 16px;
-}
-.insp-section h5 {
-	font-size: var(--text-tiny);
-	font-weight: var(--weight-semibold);
-	color: var(--text-secondary);
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-	margin-bottom: 10px;
-	display: flex;
-	align-items: center;
-	gap: 7px;
-}
-.insp-section h5 .btn {
-	margin-left: auto;
-}
-.pipe {
-	display: flex;
-	flex-direction: column;
-}
-.hint {
-	font-size: var(--text-xs);
-	color: var(--text-secondary);
-	line-height: 1.6;
-	padding: 10px 12px;
-	background: var(--surface-gray-1);
-	border-radius: var(--border-radius-sm);
-	border: 1px solid var(--outline-gray-1);
-}
-.hint :deep(b) {
-	color: var(--ink-gray-8);
-	font-weight: var(--weight-medium);
-}
-.rerun-hint {
-	margin-top: 10px;
-	font-size: var(--text-xs);
-	color: var(--ink-green-text);
-	background: var(--surface-green-1);
-	border: 1px solid var(--outline-green-1);
-	border-radius: var(--border-radius-sm);
-	padding: 8px 10px;
-	line-height: 1.5;
-}
-</style>

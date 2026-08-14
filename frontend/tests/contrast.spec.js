@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { askQuestion, openInspector } from "./fixtures/agent.js";
 
 /**
  * Phase 5 gate (`12-build-plan.md` §5, gate index row "5 - badges are
@@ -6,8 +7,9 @@ import { test, expect } from "@playwright/test";
  * and dark, measured on the rendered DOM. The mockup passes both today,
  * and got there by failing them: 87 light and 17 dark contrast failures
  * before two text token roles were defined." This runs the same audit
- * against the shipped Ask screen, closed and with the inspector open, in
- * both themes.
+ * against the shipped Ask screen - now built from frappe-ui components and
+ * the preset's semantic tokens rather than this repo's own copy of them -
+ * with an answer on screen, closed and with the inspector open, both themes.
  */
 async function contrastFailures(page) {
 	return await page.evaluate(() => {
@@ -82,18 +84,25 @@ async function contrastFailures(page) {
 
 for (const theme of ["light", "dark"]) {
 	test(`0 WCAG AA text contrast failures - ${theme}, inspector closed`, async ({ page }) => {
-		await page.goto("./");
+		await askQuestion(page);
 		if (theme === "dark") await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
 		const failures = await contrastFailures(page);
 		expect(failures, JSON.stringify(failures, null, 2)).toEqual([]);
 	});
 
 	test(`0 WCAG AA text contrast failures - ${theme}, inspector open`, async ({ page }) => {
-		await page.goto("./");
+		await askQuestion(page);
+		await openInspector(page);
 		if (theme === "dark") await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
-		await page.getByRole("button", { name: /Inspect \d+ steps/ }).click();
-		await expect(page.locator(".inspector")).toBeVisible();
 		const failures = await contrastFailures(page);
 		expect(failures, JSON.stringify(failures, null, 2)).toEqual([]);
 	});
 }
+
+test("the empty state passes the same audit in both themes", async ({ page }) => {
+	await page.goto("./");
+	await expect(page.locator("textarea.composer-input")).toBeVisible();
+	expect(await contrastFailures(page)).toEqual([]);
+	await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+	expect(await contrastFailures(page)).toEqual([]);
+});

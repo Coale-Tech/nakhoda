@@ -9,3 +9,7 @@ nakhoda/public/frontend
 nakhoda/www/_nakhoda.html
 frontend/test-results
 frontend/playwright-report
+# Written by unplugin-vue-components / unplugin-icons, which frappe-ui's vite
+# `lucideIcons` plugin installs to resolve its `~icons/lucide/*` imports.
+frontend/auto-imports.d.ts
+frontend/components.d.ts

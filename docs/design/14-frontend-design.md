@@ -173,11 +173,11 @@ copied verbatim, and that was false in four places.
   job of naming which layer produced a step. Separated by fill vs outline rather than a
   fourth hue, since §1 reserves colour for attention and provenance is not attention.
 
-In a real build these become frappe-ui components (`Button`, `Badge`, `ListView`,
-`Dialog`) with Tailwind token classes (`text-ink-gray-8`, `bg-surface-gray-1`,
-`border-outline-gray-2`). The mockup is hand-written CSS so it opens without a build step;
-the class names deliberately mirror the component boundaries. The three text tokens
-would land as a small `@theme` extension, not as overrides of espresso's own scale.
+The mockup is hand-written CSS so it opens without a build step; the class names
+deliberately mirror the component boundaries. That translation has since happened —
+see §6 for what the shipped frontend actually renders, which of the claims above
+survived contact with the real component library, and which of §5's limits are still
+in force.
 
 ---
 
@@ -221,3 +221,169 @@ would land as a small `@theme` extension, not as overrides of espresso's own sca
 - Layout is desktop-only by design: two fixed rails (236px sidebar, 452px inspector)
   set a 688px floor, there are no media queries and no viewport meta. Below ~1024px it
   overflows horizontally. Contrast, unlike layout, **is** claimed — see §4.
+
+---
+
+## 6. The shipped frontend · 2026-08-14
+
+`frontend/` is a Vite + Vue 3 SPA served by `nakhoda/www/_nakhoda.py` at `/nakhoda`.
+Two screens are now wired end-to-end — **Ask** (`src/pages/AskPage.vue`) and the
+**Query Builder** (`src/pages/QueryBuilderPage.vue`) — plus the **Queries**
+list (`src/pages/QueriesPage.vue`). The remaining workbench screens are shells.
+
+It is built from **frappe-ui** components and the library's own Tailwind preset, per
+`coale_v16/apps/frappe-ui/skills/frappe-ui/` (`SKILL.md`, `COMPONENTS.md`, `TOKENS.md`,
+`DESIGN.md`, `SETUP.md`). That replaced this repo's hand-rolled layer wholesale:
+
+- **No design token is declared here any more.** `src/assets/tokens.css`,
+  `src/assets/base.css` and the vendored `InterVariable.woff2` are deleted;
+  `src/style.css` imports `frappe-ui/style.css` (the preset's `@tailwind` layers +
+  the Inter `@font-face`) and `frappe-ui/list-style.css`. Every colour, radius,
+  shadow and type value now comes from the published preset, so §4's "48 of 49
+  verbatim" accounting is moot — the values *are* the shipped ones, and the three
+  invented text tokens are gone (secondary → `text-ink-gray-6`, tertiary →
+  `text-ink-gray-5`, chart/metric accents → `text-ink-{green,amber,blue}-*`).
+- **No hand-rolled control survives.** `Button`, `Badge`, `Textarea`, `Alert`,
+  `KeyboardShortcut`, `Tooltip`; the app frame is `DesktopShell` + `PageHeader` +
+  `ScrollArea`; the result table is the `frappe-ui/list` family in table mode
+  (`List` + `ListHeader`/`ListHeaderCell` + `ListRows`/`ListRow`/`ListCell`), which
+  owns row height, dividers, hover surface and the column tracks. `src/components/
+  Icon.vue` + `IconSprite.vue` (the mockup's `<use href="#i-*">` sprite) are deleted:
+  icons are the preset's `lucide-*` classes.
+- **Data fetching is `useCall`**, not the former hand-written `src/callApi.js`
+  (deleted). CSRF still arrives through `jinjaBootData` → `window.csrf_token`, which
+  `useCall` sends as `X-Frappe-CSRF-Token`.
+- `FrappeUIProvider` wraps the router view so imperative `dialog`/`toast` have a
+  portal; `app.use(FrappeUI, { socketio: false })` — nothing here subscribes to
+  realtime, and the default opens a socket that retries forever.
+
+### Build pitfalls this migration actually hit
+
+All four are in `SETUP.md`'s checklist; each cost a build:
+
+1. **Tailwind must be v3** with `frappeUIPreset` in `tailwind.config.js` and a
+   `postcss.config.js` — v4 silently ignores the preset's shape.
+2. **`frappe-ui/list-style.css` is a separate entry.** The family's structural CSS
+   (`[data-slot="list-row"] { display: grid }`, the `--list-columns` tracks) is
+   imported by the barrel, but that import does not survive this build, so the first
+   migrated table rendered every cell stacked while still *looking* like a table.
+   `tests/table-geometry.spec.js` now measures `grid-template-columns` and the cell
+   boxes so it cannot regress silently.
+3. **`optimizeDeps.exclude: ["frappe-ui"]`** (it ships unbuilt source with virtual
+   `~icons/lucide/*` imports) plus an explicit `include` for its CJS transitives.
+4. **A router must exist** — `Button` injects `Symbol(router)` and warns on every
+   render without one. `src/router.js` has routes for Ask, Dashboards, Workbooks,
+   Queries, Settings, Data Sources and Data Store; it detects the preview mount path
+   (`/assets/nakhoda/frontend/`) at runtime so client-side pushes stay inside the
+   Vite preview server, while production keeps the `/nakhoda` base.
+
+### Query builder
+
+- `src/composables/useQuery.js` wraps `useCall` for query CRUD
+  (`nakhoda.api.query.*`) and execution (`nakhoda.api.run` / `execute`).
+- `src/components/QueryBuilder.vue` displays the engine-format pipeline as
+  operation cards, exposes a JSON editor, and runs the pipeline through
+  `nakhoda.api.run`. Saving creates or updates a `Nakhoda Query` document and
+  navigates to the persisted URL.
+- `src/pages/AskPage.vue` adds an **Open in builder** action on generated answers
+  that passes the engine pipeline via history state; `agent.js` now keeps the
+  raw operations on the turn so the builder can reload them verbatim.
+- `tests/query-builder.spec.js` covers the Ask → builder handoff, running a
+  pipeline, saving, and the query list; `tests/fixtures/query.js` mocks the
+  query endpoints.
+
+### Which gates are measured, and which are recorded as unmet
+
+`frontend/tests/` runs against the **built** app (`vite preview`), never a snapshot.
+Phase 5's gates were written against the mockup's compiled-in demo data; live wiring
+removed that data, so the suite now drives a real question through a fixture that
+mocks only the two HTTP responses (`tests/fixtures/agent.js`) — real `agent.js`
+mapping, real components, real tokens.
+
+| Gate | Status |
+| --- | --- |
+| 0 WCAG AA text failures, light + dark, answer + inspector | **measured** — `contrast.spec.js`, 5 tests |
+| Result-table geometry: real grid, equal tracks, aligned numerics | **measured** — `table-geometry.spec.js` |
+| Receipt renders unconditionally; SQL one *labelled* action away | **measured** — `provenance.spec.js` |
+| Origin badge on every operation, none fabricated | **measured** — `origin-badges.spec.js` |
+| No Edit affordance while re-run is unwired | **measured** — `correction.spec.js` |
+| Query builder: Ask → builder handoff, run, save, list | **measured** — `query-builder.spec.js`, 4 tests |
+| Bar height ∝ value ±2%, 0px axis drift | **unmet** — `ask()` returns no chart; `Chart.vue` keeps the fixed arithmetic, the gate is `test.fixme` |
+| Correct one step and re-run without retyping | **partially met** — the inspector still sets `editable: false` because the inline "Edit & re-run" path is unwired, but a generated pipeline can now be opened in the builder, edited as JSON, and run/saved. The remaining work is typed per-step controls and a round-trip back to Ask. |
+| Four origin appearances, pairwise distinct | **unmet** — the audit record reports one origin (`model`); permission filters are inlined at SQL-compile time, never as an `injected` operation |
+| Assumptions, ambiguity counterfactual, permission notice | **unmet** — `ask()` returns none of them; the four components exist and are slotted, nothing fills them |
+
+The unmet rows are the honest state of §0's central claim: provenance *is* attached
+(operations, realised SQL, tier, model, cost, run id), but the assumption and
+permission-exclusion halves of the answer card are still engine work, and the
+frontend does not fabricate them client-side.
+
+---
+
+## 7. Strategic pivot · full BI workbench · 2026-08-14
+
+The Ask-only frontend above is being expanded to match the surface area of the
+incumbent (`nvumabaranda/apps/insights/frontend`). The seven-screen mockup in
+`mockup/index.html` is no longer a design artifact; it is the specification. The
+current Ask implementation survives as one route inside a larger workbench.
+
+**Why the pivot.** A chat-only shell competes badly against a complete product: users
+compare Nakhoda to dashboards, workbooks, and query builders they already have, and the
+semantic-layer argument never gets a hearing if the screen does not look like the
+category. Metabase already ships Data Studio, Python transforms, documents, MCP and an
+Agent API (§5.5) — the differentiator is not the visual surface, it is that Nakhoda's
+semantic layer is generated from the application schema. The workbench is the shell
+that exposes the generator.
+
+**What changes in the target.**
+
+- A persistent left sidebar: Dashboards, Workbooks, Queries, Ask, Data Sources, Data
+  Store, Settings. The sidebar is the primary navigation; Ask is one entry, not the whole
+  app.
+- Pinia stores for dashboards, workbooks, queries, and session state. Local refs in
+  `AskPage.vue` are not enough once workbooks and dashboards hold cross-component state.
+- A visual query builder that edits the same Operation JSON the agent emits. The
+  inspector becomes an editor; generated pipelines can be opened, corrected, and saved
+  as workbook queries without retyping the question.
+- A chart builder with typed config (dimensions, measures, display options, chart type).
+- A workbook container for named collections of queries, charts, and dashboards, with
+  sharing, versioning, and export.
+- A dashboard grid with filters and widget chrome, reusing the same chart components and
+  operation grammar.
+- Settings, users, and teams pages that are currently framework-shaped in Insights and
+  will be rebuilt with frappe-ui here.
+
+**What does not change.**
+
+- The design system stays `frappe-ui` + the Tailwind preset; no hand-rolled tokens return.
+- The operation grammar stays closed: the builder surfaces the same ~25 functions the
+  agent is allowed to emit, not an open expression language.
+- No in-process Python execution; the only sanctioned code path is an out-of-process
+  notebook kernel (Phase 7).
+- The agent remains the fastest path to a correct answer. The visual builder must not
+  become the primary way to build a query; it is the correction and refinement surface.
+
+**Migration from the current Ask implementation.**
+
+- `App.vue` loses its minimal wrapper and gains the `AppSidebar` + `PageHeader` shell.
+- `AskPage.vue` keeps the composer, turn list, and answer card; the "Inspect" button
+  now routes to or opens the query builder with the generated pipeline loaded.
+- `src/agent.js` and `useAsk` stay unchanged; they already produce the right Operation JSON
+  and audit record. The query builder becomes a second consumer of `useCall` and the
+  engine endpoints.
+- The inspector component is promoted from a read-only slide-out into the operation
+  editor's step rail.
+- New test fixture scope: the existing `tests/fixtures/agent.js` remains the Ask fixture;
+  add fixtures for workbooks, dashboards, and queries that mock the DocType CRUD endpoints.
+
+**Status of this section.** Ask, the query builder, and the queries list are now
+implemented and covered by the regression suite. The remaining workbench screens
+(Dashboards, Workbooks, Data Sources, Data Store, Settings) are still shells.
+
+**Preview caveat.** `yarn serve` uses Vite preview with `base=/assets/nakhoda/frontend/`,
+so the SPA mounts at `/assets/nakhoda/frontend/` during preview. `src/router.js` detects
+this at runtime (`window.location.pathname` starts with the asset base) and uses the
+asset base as the Vue Router history base; otherwise it uses `/nakhoda` for the Frappe
+www route. Client-side navigation therefore emits `/assets/nakhoda/frontend/*` URLs in
+preview and `/nakhoda/*` URLs in production, so hard refreshes on subpaths work in both
+environments.

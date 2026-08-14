@@ -1,11 +1,15 @@
 <script setup>
-import Chip from "./Chip.vue";
+import { Badge } from "frappe-ui";
 
 /**
- * `.assumptions` container (`app.css` lines 236-245) - "the differentiator"
- * per the mockup's own comment. Header count is derived here from the
- * `applied`/`needs_you` counts passed in, not hand-typed, so the summary
- * chip can never drift from the rows actually rendered below it.
+ * The assumptions container - "the differentiator" per the mockup's own
+ * comment. Header count is derived here from the `applied`/`needs_you`
+ * counts passed in, not hand-typed, so the summary badge can never drift
+ * from the rows actually rendered below it.
+ *
+ * The section label uses `text-tiny-semibold`: the frappe-ui preset gives
+ * the `tiny` size the uppercase transform and letter-spacing this eyebrow
+ * needs, so none of it is hand-tuned here.
  */
 const props = defineProps({
 	applied: { type: Number, required: true },
@@ -14,40 +18,14 @@ const props = defineProps({
 </script>
 
 <template>
-	<div class="assumptions">
-		<div class="assumptions-head">
-			<h4>Assumptions</h4>
-			<Chip tone="gray">{{ props.applied }} applied · {{ props.needsYou }} needs you</Chip>
+	<div class="assumptions mt-4 border-t border-outline-gray-1">
+		<div class="flex items-center gap-1.5 px-4 pt-3 pb-2">
+			<h4 class="text-tiny-semibold text-ink-gray-6">Assumptions</h4>
+			<Badge theme="gray" variant="subtle" :label="`${props.applied} applied · ${props.needsYou} needs you`" />
 		</div>
-		<div class="assumption-list">
+		<div class="assumption-list flex flex-col gap-px px-4 pb-3">
 			<slot />
 		</div>
 		<slot name="ambiguity" />
 	</div>
 </template>
-
-<style scoped>
-.assumptions {
-	border-top: 1px solid var(--outline-gray-1);
-	margin-top: 16px;
-}
-.assumptions-head {
-	display: flex;
-	align-items: center;
-	gap: 7px;
-	padding: 11px 16px 8px;
-}
-.assumptions-head h4 {
-	font-size: var(--text-tiny);
-	font-weight: var(--weight-semibold);
-	color: var(--text-secondary);
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-}
-.assumption-list {
-	padding: 0 16px 12px;
-	display: flex;
-	flex-direction: column;
-	gap: 1px;
-}
-</style>

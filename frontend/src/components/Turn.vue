@@ -18,6 +18,13 @@ import Trace from "./Trace.vue";
  * only on the generated path - a verified answer has neither, per
  * `12-build-plan.md` Phase 3's "no ambiguity" gate. Failed turns never
  * reach this component - see `ErrorTurn.vue`.
+ *
+ * The question is the turn's heading: ink + type scale carry the hierarchy
+ * (frappe-ui DESIGN.md, "hierarchy through ink, not boxes"), so the mockup's
+ * decorative `RN` avatar - and the 34px indent that aligned the card to it -
+ * are gone. Nothing in the SPA's boot context (`www/_nakhoda.py` feeds only
+ * `csrf_token` and `site_name`) identifies the user, so those initials could
+ * only ever have been fictional.
  */
 defineProps({
 	turn: { type: Object, required: true },
@@ -25,11 +32,8 @@ defineProps({
 </script>
 
 <template>
-	<div class="turn">
-		<div class="ask">
-			<div class="avatar">RN</div>
-			<div class="ask-text">{{ turn.question }}</div>
-		</div>
+	<div class="mb-7">
+		<p class="text-lg-medium mb-4 text-ink-gray-9">{{ turn.question }}</p>
 
 		<Trace :summary="turn.trace.summary" :ticks="turn.trace.ticks" :seconds="turn.trace.seconds" />
 
@@ -38,10 +42,10 @@ defineProps({
 
 			<template v-if="turn.answer.chart">
 				<Chart :series="turn.answer.chart.series" />
-				<div class="chart-unit">{{ turn.answer.chart.unit }}</div>
+				<p class="text-p-xs mt-1.5 text-ink-gray-6">{{ turn.answer.chart.unit }}</p>
 			</template>
 
-			<DataTable v-if="turn.answer.table" style="margin-top: 16px" v-bind="turn.answer.table" />
+			<DataTable v-if="turn.answer.table" class="mt-4" v-bind="turn.answer.table" />
 
 			<template #assumptions v-if="turn.answer.assumptions">
 				<AssumptionsBlock :applied="turn.answer.assumptions.applied" :needs-you="turn.answer.assumptions.needsYou">
@@ -76,41 +80,3 @@ defineProps({
 		</AnswerCard>
 	</div>
 </template>
-
-<style scoped>
-.turn {
-	margin-bottom: 28px;
-}
-.ask {
-	display: flex;
-	gap: 10px;
-	align-items: flex-start;
-	margin-bottom: 16px;
-}
-.avatar {
-	width: 24px;
-	height: 24px;
-	flex: none;
-	border-radius: var(--border-radius-full);
-	background: var(--surface-gray-3);
-	color: var(--ink-gray-6);
-	display: grid;
-	place-items: center;
-	font-size: var(--text-tiny);
-	font-weight: var(--weight-semibold);
-}
-.ask-text {
-	font-size: var(--text-lg);
-	font-weight: var(--weight-medium);
-	color: var(--ink-gray-9);
-	line-height: 1.45;
-	padding-top: 1px;
-	letter-spacing: -0.011em;
-}
-.chart-unit {
-	font-size: var(--text-xs);
-	color: var(--text-secondary);
-	margin-top: 7px;
-	line-height: 1.5;
-}
-</style>

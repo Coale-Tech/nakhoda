@@ -1,41 +1,27 @@
 <script setup>
 /**
- * `.kv` label/value rows (`app.css` lines 415-418) - used by the inspector's
- * "Cost & scope" section. `rows[].color` is a CSS var reference for the one
- * case the mockup hand-colours a value (rows excluded by permissions, in
- * `--ink-blue-text`) - everything else inherits the default ink.
+ * Label/value rows for the inspector's "Cost & scope" section. `rows[].mono`
+ * renders the value in the mono face (run names, model ids); `rows[].color`
+ * is an escape hatch for a caller that needs one value tinted - it takes a
+ * CSS colour or `var(--ink-*)` reference, since a Tailwind class can't be
+ * passed through a style binding.
  */
 defineProps({
-	rows: { type: Array, required: true }, // [{ label, value, color? }]
+	rows: { type: Array, required: true }, // [{ label, value, color?, mono? }]
 });
 </script>
 
 <template>
-	<dl class="kv-list">
-		<div class="kv" v-for="(row, i) in rows" :key="i">
-			<dt>{{ row.label }}</dt>
-			<dd :style="row.color ? { color: row.color } : null" :class="{ mono: row.mono }">{{ row.value }}</dd>
+	<dl>
+		<div v-for="(row, i) in rows" :key="i" class="kv flex justify-between gap-3 py-1 text-xs">
+			<dt class="text-ink-gray-6">{{ row.label }}</dt>
+			<dd
+				class="text-right tabular-nums text-ink-gray-8"
+				:class="{ 'font-mono': row.mono }"
+				:style="row.color ? { color: row.color } : null"
+			>
+				{{ row.value }}
+			</dd>
 		</div>
 	</dl>
 </template>
-
-<style scoped>
-.kv {
-	display: flex;
-	justify-content: space-between;
-	gap: 12px;
-	font-size: var(--text-xs);
-	padding: 4px 0;
-}
-.kv dt {
-	color: var(--text-secondary);
-}
-.kv dd {
-	color: var(--ink-gray-8);
-	font-variant-numeric: tabular-nums;
-	text-align: right;
-}
-.kv dd.mono {
-	font-family: var(--font-mono);
-}
-</style>

@@ -1,16 +1,25 @@
 import { test, expect } from "@playwright/test";
+import { askQuestion } from "./fixtures/agent.js";
 
 /**
  * Phase 5 gate (`12-build-plan.md` §5, gate index row "5 - charts do not
- * lie"): bar height must be proportional to value within 2%, and every
- * axis label must sit under the bar it names with 0px drift. Both were
- * real defects in the design mockup, invisible to repeated eyeballing and
- * found only by measuring rendered geometry - see the docstring in
- * `Chart.vue`. This asserts the same thing against the shipped build, not
- * a snapshot.
+ * lie"): bar height must be proportional to value within 2%, and every axis
+ * label must sit under the bar it names with 0px drift. Both were real
+ * defects in the design mockup, invisible to repeated eyeballing and found
+ * only by measuring rendered geometry - see the docstring in `Chart.vue`.
+ *
+ * No chart ships yet. `nakhoda.api.agent.ask` returns columns and rows;
+ * nothing picks a chart type, so `src/agent.js` leaves `turn.answer.chart`
+ * unset and `Turn.vue` renders the table branch. `Chart.vue` retains the
+ * arithmetic that fixed both defects, and the measurement below is kept
+ * verbatim so it runs the day a chart is emitted - the geometry claim is
+ * asserted against a rendered DOM or not at all.
+ *
+ * The equivalent claim for the surface that *does* ship is measured in
+ * `table-geometry.spec.js`.
  */
-test("bar height is proportional to its value within 2 percentage points", async ({ page }) => {
-	await page.goto("./");
+test.fixme("bar height is proportional to its value within 2 percentage points", async ({ page }) => {
+	await askQuestion(page);
 	const bars = page.locator(".chart .bar");
 	const count = await bars.count();
 	expect(count).toBeGreaterThan(1);
@@ -37,8 +46,8 @@ test("bar height is proportional to its value within 2 percentage points", async
 	}
 });
 
-test("axis label sits under the bar it names, 0px horizontal drift", async ({ page }) => {
-	await page.goto("./");
+test.fixme("axis label sits under the bar it names, 0px horizontal drift", async ({ page }) => {
+	await askQuestion(page);
 	const bars = page.locator(".chart .bar-col");
 	const labels = page.locator(".chart .axis > div");
 	const count = await bars.count();

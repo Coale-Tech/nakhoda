@@ -7,6 +7,10 @@
  * gap instead. Only rendered when the engine actually removed rows -
  * `excludedCount === 0` means nothing was hidden, and the caller should not
  * mount this component at all rather than have it print a hollow "0 rows".
+ *
+ * `ink-blue-9` on `surface-blue-1` measures 6.25:1 light / 10.02 dark; the
+ * `blue-link` token the eye reaches for first is 3.36 and would fail the
+ * contrast gate at this text size.
  */
 defineProps({
 	excludedCount: { type: Number, required: true },
@@ -16,34 +20,13 @@ defineProps({
 </script>
 
 <template>
-	<div class="perm-note">
-		<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-			<rect x="3" y="7" width="10" height="7" rx="1.5" /><path d="M5 7V4.5a3 3 0 0 1 6 0V7" />
-		</svg>
-		<span
-			><b>{{ excludedCount }}</b> record{{ excludedCount === 1 ? "" : "s" }} ({{ excludedAmount }}) are
-			outside your {{ reason }} and are not in this total.</span
-		>
+	<div
+		class="perm-note flex items-center gap-2 border-t border-outline-blue-1 bg-surface-blue-1 px-4 py-2 text-xs text-ink-blue-9 [&_b]:tabular-nums"
+	>
+		<span class="lucide-lock size-3.5 flex-none" aria-hidden="true" />
+		<span>
+			<b>{{ excludedCount }}</b> record{{ excludedCount === 1 ? "" : "s" }} ({{ excludedAmount }}) are outside your
+			{{ reason }} and are not in this total.
+		</span>
 	</div>
 </template>
-
-<style scoped>
-.perm-note {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 8px 16px;
-	background: var(--surface-blue-1);
-	border-top: 1px solid var(--outline-blue-1);
-	font-size: var(--text-tiny);
-	color: var(--ink-blue-text);
-}
-.perm-note svg {
-	width: 13px;
-	height: 13px;
-	flex: none;
-}
-.perm-note b {
-	font-variant-numeric: tabular-nums;
-}
-</style>

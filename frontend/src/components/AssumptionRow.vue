@@ -1,4 +1,6 @@
 <script setup>
+import { Button } from "frappe-ui";
+
 /**
  * One row of the assumption taxonomy (`14-frontend-design.md` §1). `state`
  * carries the product's honesty: `applied` is the semantic model settling a
@@ -11,6 +13,11 @@
  * §1's table - the mockup itself tags one row `measure`, which is not one
  * of the seven. The taxonomy names the *known* failure modes; it does not
  * forbid the generator from surfacing an assumption outside it.
+ *
+ * The amber step is `ink-amber-9`, not the `amber-8` the eye reaches for:
+ * amber-8 measures 3.89:1 on a card in light mode and would fail the
+ * contrast gate. `Change` is a real ghost Button revealed on row hover,
+ * rather than a styled span pretending to be a link.
  */
 defineProps({
 	tag: { type: String, required: true },
@@ -20,65 +27,22 @@ defineEmits(["change"]);
 </script>
 
 <template>
-	<div class="assumption">
-		<span class="a-tag" :class="state === 'needs_you' ? 'a-ask' : 'a-auto'">{{ tag }}</span>
-		<span><slot /></span>
-		<span class="a-edit" @click="$emit('change')">Change</span>
+	<div
+		class="assumption group -mx-2 flex items-baseline gap-2.5 rounded-sm px-2 py-1.5 text-xs text-ink-gray-7 hover:bg-surface-gray-2 [&_code]:rounded-sm [&_code]:bg-surface-gray-2 [&_code]:px-1 [&_code]:py-px [&_code]:font-mono [&_code]:text-[11px] [&_code]:text-ink-gray-8"
+	>
+		<span
+			class="w-[62px] flex-none text-[10px] font-semibold uppercase tracking-[0.04em]"
+			:class="state === 'needs_you' ? 'text-ink-amber-9' : 'text-ink-gray-6'"
+		>
+			{{ tag }}
+		</span>
+		<span class="min-w-0"><slot /></span>
+		<Button
+			class="ml-auto flex-none self-center opacity-0 group-hover:opacity-100"
+			variant="ghost"
+			size="sm"
+			label="Change"
+			@click="$emit('change')"
+		/>
 	</div>
 </template>
-
-<style scoped>
-.assumption {
-	display: flex;
-	align-items: baseline;
-	gap: 9px;
-	padding: 6px 8px;
-	margin: 0 -8px;
-	border-radius: var(--border-radius-sm);
-	font-size: var(--text-xs);
-	color: var(--ink-gray-7);
-	line-height: 1.5;
-}
-.assumption:hover {
-	background: var(--surface-gray-2);
-}
-.assumption :deep(code) {
-	font-family: var(--font-mono);
-	font-size: 11px;
-	background: var(--surface-gray-2);
-	color: var(--ink-gray-8);
-	padding: 1px 4px;
-	border-radius: var(--border-radius-tiny);
-}
-.assumption:hover :deep(code) {
-	background: var(--surface-gray-3);
-}
-.a-tag {
-	flex: none;
-	width: 62px;
-	font-size: 10px;
-	font-weight: var(--weight-semibold);
-	text-transform: uppercase;
-	letter-spacing: 0.04em;
-	padding-top: 1px;
-}
-.a-auto {
-	color: var(--text-tertiary);
-}
-.a-ask {
-	color: var(--ink-amber-text);
-}
-.a-edit {
-	margin-left: auto;
-	flex: none;
-	opacity: 0;
-	font-size: var(--text-tiny);
-	color: var(--ink-blue-text);
-	font-weight: var(--weight-medium);
-	cursor: pointer;
-	white-space: nowrap;
-}
-.assumption:hover .a-edit {
-	opacity: 1;
-}
-</style>

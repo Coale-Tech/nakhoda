@@ -1,0 +1,24 @@
+/* The single CSS entry. `frappe-ui/style.css` ships the Inter Variable
+   @font-face and the `@tailwind base/components/utilities` layers the preset's
+   tokens are emitted into - it replaces this app's former hand-copied
+   `assets/tokens.css` + `assets/base.css` pair, so no colour, radius, shadow
+   or type value is declared in this repo any more. */
+@import "frappe-ui/style.css";
+
+/* The List family's structural grid rules (`[data-slot="list-row"]`'s
+   `display:grid` + `--list-columns` tracks) ship as their own CSS entry.
+   `frappe-ui/list`'s barrel does `import './style.css'` itself, but that
+   import does not survive this build (the package is in `optimizeDeps.exclude`
+   and its barrel is a side-effect-free re-export), so the rules were absent
+   and every table row stacked its cells. Import the published entry directly. */
+@import "frappe-ui/list-style.css";
+
+@layer base {
+	/* DesktopShell sizes itself with `h-full`, which only resolves if every
+	   ancestor has a height. */
+	html,
+	body,
+	#app {
+		height: 100%;
+	}
+}
