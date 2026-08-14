@@ -1,62 +1,103 @@
 <script setup>
 import { computed } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { Button } from "frappe-ui";
+import { useRoute } from "vue-router";
+import { useStorage } from "@vueuse/core";
+import SidebarLink from "./SidebarLink.vue";
 
 /**
- * Persistent left navigation for the workbench. Mirrors the route table in
- * `router.js`: every primary list route gets a link. Active state is derived
- * from the current route name. The sidebar collapses to icons on narrow viewports
- * but keeps the labels accessible via `aria-label`.
+ * Persistent left navigation for the workbench, styled after Insights'
+ * `AppSidebar.vue`: a collapsible rail (48px icons-only / 224px full) with
+ * grouped links, an uppercase group label per section, and a collapse toggle
+ * pinned to the bottom. The collapsed preference persists across sessions
+ * the same way Insights does it, keyed per-app so the two don't collide.
  */
 const route = useRoute();
-const router = useRouter();
+const isCollapsed = useStorage("nakhoda:sidebarCollapsed", false);
 
-const links = [
-	{ name: "Ask", label: "Ask", icon: "lucide-message-circle" },
-	{ name: "Dashboards", label: "Dashboards", icon: "lucide-layout-grid" },
-	{ name: "Workbooks", label: "Workbooks", icon: "lucide-book-open" },
-	{ name: "Queries", label: "Queries", icon: "lucide-database" },
-	{ name: "Data Sources", label: "Data Sources", icon: "lucide-plug" },
-	{ name: "Data Store", label: "Data Store", icon: "lucide-server" },
-	{ name: "Settings", label: "Settings", icon: "lucide-settings" },
+/**
+ * Served by Frappe's asset pipeline (`nakhoda/public/nakhoda-logo.png`,
+ * symlinked to `sites/assets/nakhoda/...` on `bench build`) - not a file
+ * inside this Vite project. Bound via `:src` rather than a static template
+ * attribute so `@vitejs/plugin-vue`'s asset-url transform leaves it as a
+ * plain runtime string instead of trying to resolve/bundle it.
+ */
+const logoUrl = "/assets/nakhoda/nakhoda-logo.png";
+
+const navGroups = [
+	{
+		label: "Workbench",
+		links: [
+			{ label: "Ask", icon: "lucide-message-circle", to: "Ask" },
+			{ label: "Dashboards", icon: "lucide-layout-grid", to: "Dashboards", isActive: (n) => n === "Dashboard" },
+			{ label: "Workbooks", icon: "lucide-book-open", to: "Workbooks", isActive: (n) => n === "Workbook" },
+			{ label: "Queries", icon: "lucide-database", to: "Queries", isActive: (n) => n === "Query" },
+		],
+	},
+	{
+		label: "Data",
+		links: [
+			{ label: "Data Sources", icon: "lucide-plug", to: "Data Sources" },
+			{ label: "Data Store", icon: "lucide-server", to: "Data Store" },
+		],
+	},
 ];
 
-const isActive = (name) => {
-	// Builder routes (Dashboard, Workbook, Query) highlight their parent list item.
-	if (name === "Dashboards" && route.name === "Dashboard") return true;
-	if (name === "Workbooks" && route.name === "Workbook") return true;
-	if (name === "Queries" && route.name === "Query") return true;
-	return route.name === name;
-};
-
-function navigate(name) {
-	router.push({ name });
+function isGroupLinkActive(link) {
+	return link.isActive ? link.isActive(route.name) : route.name === link.to;
 }
-
-const activeLink = computed(() => links.find((l) => isActive(l.name)));
 </script>
 
 <template>
-	<aside class="flex h-full w-[236px] flex-col border-r border-outline-gray-2 bg-surface-gray-1">
-		<div class="flex h-12 items-center gap-2 px-4">
-			<span class="text-base-semibold text-ink-gray-9">Nakhoda</span>
+	<div
+		class="flex h-full flex-col justify-between border-r border-outline-gray-2 bg-surface-gray-1 transition-all duration-300 ease-in-out motion-reduce:transition-none"
+		:class="isCollapsed ? 'w-12' : 'w-56'"
+	>
+		<div class="flex flex-col overflow-hidden">
+			<div class="flex h-12 items-center gap-2 overflow-hidden px-3">
+				<img :src="logoUrl" alt="" class="h-6 w-6 flex-shrink-0 rounded" />
+				<span
+					class="text-base-semibold text-ink-gray-9 duration-300 ease-in-out motion-reduce:transition-none"
+					:class="isCollapsed ? 'w-0 overflow-hidden opacity-0' : 'w-auto truncate opacity-100'"
+				>
+					Nakhoda
+				</span>
+			</div>
+			<div class="flex flex-col overflow-y-auto px-2 pb-2">
+				<template v-for="group in navGroups" :key="group.label">
+					<div
+						v-if="!isCollapsed"
+						class="px-2 pb-1 pt-3 text-xs font-medium uppercase tracking-wide text-ink-gray-5"
+					>
+						{{ group.label }}
+					</div>
+					<SidebarLink
+						v-for="link in group.links"
+						:key="link.to"
+						class="my-0.5"
+						:icon="link.icon"
+						:label="link.label"
+						:to="link.to"
+						:is-active="isGroupLinkActive(link)"
+						:is-collapsed="isCollapsed"
+					/>
+				</template>
+			</div>
 		</div>
-		<nav class="flex flex-1 flex-col gap-1 px-3 py-2" aria-label="Workbench">
-			<Button
-				v-for="link in links"
-				:key="link.name"
-				variant="ghost"
-				class="justify-start gap-2"
-				:class="isActive(link.name) ? 'bg-surface-gray-2 text-ink-gray-9' : 'text-ink-gray-6'"
-				:icon-left="link.icon"
-				:label="link.label"
-				@click="navigate(link.name)"
+		<div class="border-t border-outline-gray-2 px-2 py-2">
+			<SidebarLink
+				label="Settings"
+				icon="lucide-settings"
+				to="Settings"
+				:is-collapsed="isCollapsed"
+				class="my-0.5"
 			/>
-		</nav>
-		<div class="border-t border-outline-gray-2 px-4 py-3">
-			<div class="text-xs text-ink-gray-5">Active</div>
-			<div class="text-sm-medium text-ink-gray-8">{{ activeLink?.label || "Ask" }}</div>
+			<SidebarLink
+				:label="isCollapsed ? 'Expand' : 'Collapse'"
+				:icon="isCollapsed ? 'lucide-panel-left-open' : 'lucide-panel-left-close'"
+				:is-collapsed="isCollapsed"
+				class="my-0.5"
+				@click="isCollapsed = !isCollapsed"
+			/>
 		</div>
-	</aside>
+	</div>
 </template>
