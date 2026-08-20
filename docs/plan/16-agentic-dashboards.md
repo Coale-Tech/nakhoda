@@ -255,8 +255,9 @@ KeyError: no recorded completion for tier smol and this prompt (75e8ec777cbbece4
 
 `semantic_bench/generated.json` replays recorded completions keyed by a prompt hash.
 The prompt is `context + grammar() + question + ask`, and `grammar()` is rendered *from
-the engine that implements it* — so the uncommitted Phase 8 ML operations in
-`engine/operations.py` (`forecast`, `detect_anomalies`, `segment`, `score`) changed the
+the engine that implements it* — so the Phase 8 ML operations in
+`engine/operations.py` (`forecast`, `detect_anomalies`, `segment`, `score`), which sat
+uncommitted until `e4a0daf` carried them in, changed the
 `ops` prompt and invalidated every recorded `ops` answer. The `sql` target still scores
 112/120, which localises it exactly: `context` is unchanged, the grammar is not. Nothing
 in this work touches prompt construction or the grammar.
