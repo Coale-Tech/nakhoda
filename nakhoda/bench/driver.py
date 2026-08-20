@@ -35,7 +35,11 @@ from typing import Any
 #: Model tiers, named as `semantic_bench/generated.json` names them.
 TIERS = ("smol", "default", "slow")
 
-#: What the model is asked to emit.
+#: What the model is asked to emit, for the two targets the benchmark
+#: measures (`00-REPORT.md` §6.2's 95.8%/95.0%). A third target,
+#: `"ops_annotated"`, exists below for `nakhoda.agent.manager`'s live path
+#: only - it asks for the same `ops` array plus an `assumptions` list, is
+#: deliberately excluded from this tuple, and has never been benchmarked.
 TARGETS = ("sql", "ops")
 
 #: Context arms. A is the DDL a warehouse sees; B is the semantic layer.
@@ -152,6 +156,13 @@ def grammar() -> str:
 	return "\n".join(lines)
 
 
+#: A model may state `"applied"` for a choice the semantic model settled
+#: unambiguously, or `"needs_you"` for one where another reading was equally
+#: plausible. Mirrors `AssumptionRow.vue`'s two states exactly - the frontend
+#: never invents a third.
+ASSUMPTION_STATES = ("applied", "needs_you")
+
+
 def prompt(context: str, question: str, target: str) -> str:
 	"""What the model sees. The only difference between targets is the ask."""
 	if target == "sql":
@@ -163,10 +174,68 @@ def prompt(context: str, question: str, target: str) -> str:
 			"Reply with the JSON array and nothing else."
 		)
 		spec = grammar() + "\n\n"
+	elif target == "ops_annotated":
+		ask = (
+			"Answer the question with a pipeline in the operation grammar above.\n"
+			'Reply with one JSON object: {"ops": [...], "assumptions": [...]}.\n'
+			"\n"
+			"`ops` is the JSON array described above.\n"
+			"\n"
+			"`assumptions` lists every choice you made that the question did not spell\n"
+			'out, each {"tag": SHORT_LABEL, "state": "applied" | "needs_you", "text": SENTENCE}.\n'
+			'`state` is "applied" when the schema settled the choice unambiguously - name it\n'
+			'anyway, do not hide a resolved judgment call - and "needs_you" when another\n'
+			'reading was equally plausible and you picked one. For a "needs_you" entry, also\n'
+			'include "counterfactual" (one sentence naming what the other reading would have\n'
+			'produced), "alt_label" and "keep_label" (short button labels for the two choices).\n'
+			"If nothing was ambiguous, `assumptions` may be [].\n"
+			"Reply with the JSON object and nothing else."
+		)
+		spec = grammar() + "\n\n"
 	else:
 		raise ValueError(f"unknown target {target!r}")
 
 	return f"{context}\n\n{spec}Question: {question}\n\n{ask}\n"
+
+
+#: How much of a rejected answer the repair prompt echoes. A reply that failed
+#: to parse can be any length at all, and the prompt it rides in already carries
+#: the whole semantic model - so the echo is bounded rather than trusted.
+REPAIR_ECHO = 4000
+
+
+def repair(text_prompt: str, rejected: str, error: str) -> str:
+	"""The same prompt, plus the answer that was refused and the refusal.
+
+	`agent/providers.py:complete` samples at temperature 0 on purpose, so asking
+	a model the identical prompt twice cannot produce a different pipeline - the
+	only thing that makes a second attempt worth its latency is telling the
+	model what was wrong with the first. Every refusal this engine raises names
+	the offending node (`engine/operations.py`, `engine/expression.py`), which is
+	also why `api.validate` returns a reason instead of raising one: its
+	docstring names "a model correcting itself" as the consumer, and this is that
+	caller.
+
+	`rejected` is what the model produced, rendered by the caller: the pipeline
+	when there was one, else the reply verbatim - a reply that did not parse is
+	itself the thing to correct, and a placeholder in its place would ask the
+	model to guess what it had said.
+	"""
+	echo = rejected[:REPAIR_ECHO]
+	if len(rejected) > REPAIR_ECHO:
+		echo = f"{echo}\n... (truncated)"
+	return (
+		f"{text_prompt}\n"
+		"Your previous answer was rejected.\n"
+		"\n"
+		f"It was:\n{echo}\n"
+		"\n"
+		f"The reason:\n{error}\n"
+		"\n"
+		"Correct exactly that, keeping everything else. The grammar above is closed:\n"
+		"if a shape you want is not in it, express the same intent with the shapes\n"
+		"that are. Reply with the JSON object and nothing else.\n"
+	)
 
 
 def sha(text: str) -> str:
@@ -204,6 +273,42 @@ def plan(
 	return rows
 
 
+def _valid_assumptions(raw: Any) -> list[dict]:
+	"""Best-effort validation of the model's `assumptions` list. Malformed
+	entries are dropped rather than failing the whole extraction - `ops` is
+	the product's non-negotiable artifact (module docstring); a garbled
+	explanation of it must never cost a valid pipeline its answer."""
+	if not isinstance(raw, list):
+		return []
+	out = []
+	for entry in raw:
+		if not isinstance(entry, dict):
+			continue
+		tag, state, text = entry.get("tag"), entry.get("state"), entry.get("text")
+		if not (
+			isinstance(tag, str) and tag and state in ASSUMPTION_STATES and isinstance(text, str) and text
+		):
+			continue
+		row = {"tag": tag, "state": state, "text": text}
+		if state == "needs_you":
+			counterfactual, alt_label, keep_label = (
+				entry.get("counterfactual"),
+				entry.get("alt_label"),
+				entry.get("keep_label"),
+			)
+			if (
+				isinstance(counterfactual, str)
+				and counterfactual
+				and isinstance(alt_label, str)
+				and alt_label
+				and isinstance(keep_label, str)
+				and keep_label
+			):
+				row.update(counterfactual=counterfactual, alt_label=alt_label, keep_label=keep_label)
+		out.append(row)
+	return out
+
+
 def extract(text: str, target: str) -> tuple[Any, str | None]:
 	"""The artifact inside a completion, or why there is none.
 
@@ -217,6 +322,37 @@ def extract(text: str, target: str) -> tuple[Any, str | None]:
 
 	if target == "sql":
 		return body.rstrip().rstrip(";"), None
+
+	if target == "ops_annotated":
+		# The annotated envelope is a JSON object; a model that ignores the
+		# extra ask and replies with the bare `ops` array (the shape `target
+		# == "ops"` has always accepted) still answers, just with no
+		# assumptions - see the module docstring's non-negotiable.
+		obrace, obracket = body.find("{"), body.find("[")
+		if obrace >= 0 and (obracket < 0 or obrace < obracket):
+			cbrace = body.rfind("}")
+			if cbrace < obrace:
+				return None, "no JSON object in completion"
+			try:
+				payload = json.loads(body[obrace : cbrace + 1])
+			except json.JSONDecodeError as e:
+				return None, f"invalid JSON: {e.msg}"
+			if not isinstance(payload, dict):
+				return None, "JSON is not an object"
+			ops = payload.get("ops")
+			if not isinstance(ops, list):
+				return None, "'ops' is not an array"
+			return {"ops": ops, "assumptions": _valid_assumptions(payload.get("assumptions"))}, None
+		start, end = obracket, body.rfind("]")
+		if start < 0 or end < start:
+			return None, "no JSON object or array in completion"
+		try:
+			ops = json.loads(body[start : end + 1])
+		except json.JSONDecodeError as e:
+			return None, f"invalid JSON: {e.msg}"
+		if not isinstance(ops, list):
+			return None, "JSON is not an array"
+		return {"ops": ops, "assumptions": []}, None
 
 	start, end = body.find("["), body.rfind("]")
 	if start < 0 or end < start:

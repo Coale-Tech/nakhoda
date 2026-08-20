@@ -7,8 +7,9 @@ import WorkbookBuilderPage from "./pages/WorkbookBuilderPage.vue";
 import QueriesPage from "./pages/QueriesPage.vue";
 import QueryBuilderPage from "./pages/QueryBuilderPage.vue";
 import DataSourcesPage from "./pages/DataSourcesPage.vue";
+import DataSourceTablesPage from "./pages/DataSourceTablesPage.vue";
+import DataSourceTablePage from "./pages/DataSourceTablePage.vue";
 import DataStorePage from "./pages/DataStorePage.vue";
-import SettingsPage from "./pages/SettingsPage.vue";
 
 /**
  * History base is `/nakhoda` when the Frappe www route serves the SPA, but
@@ -37,12 +38,36 @@ export const router = createRouter({
 		{ path: "/dashboards", name: "Dashboards", component: DashboardsPage, meta: { label: "Dashboards", icon: "lucide-layout-grid" } },
 		{ path: "/dashboards/:name", name: "Dashboard", component: DashboardBuilderPage, meta: { label: "Dashboard", icon: "lucide-layout-grid" } },
 		{ path: "/workbooks", name: "Workbooks", component: WorkbooksPage, meta: { label: "Workbooks", icon: "lucide-book-open" } },
-		{ path: "/workbooks/:name", name: "Workbook", component: WorkbookBuilderPage, meta: { label: "Workbook", icon: "lucide-book-open" } },
+		// `chromeless`: a workbook replaces the workbench shell rather than
+		// nesting inside it. Insights does the same (`src2/workbook/Workbook.vue`
+		// renders its own navbar plus the workbook sidebar and no app sidebar) -
+		// the builder needs the width, and the workbook's own navbar carries the
+		// one link back out.
+		{
+			path: "/workbooks/:name",
+			name: "Workbook",
+			component: WorkbookBuilderPage,
+			meta: { label: "Workbook", icon: "lucide-book-open", chromeless: true },
+		},
+		// The open item is a route, not local state, so a saved answer is
+		// linkable: `save_answer` hands back `{workbook, query}` and Ask points
+		// at exactly that query. One record for all three item types - the
+		// builder switches on `itemType`, and constraining the param here means
+		// a typo lands on the catch-all redirect rather than an empty panel.
+		{
+			path: "/workbooks/:name/:itemType(query|chart|dashboard)/:itemId",
+			name: "Workbook Item",
+			component: WorkbookBuilderPage,
+			meta: { label: "Workbook", icon: "lucide-book-open", chromeless: true },
+		},
 		{ path: "/queries", name: "Queries", component: QueriesPage, meta: { label: "Queries", icon: "lucide-database" } },
 		{ path: "/queries/:name", name: "Query", component: QueryBuilderPage, meta: { label: "Query", icon: "lucide-database" } },
 		{ path: "/data-sources", name: "Data Sources", component: DataSourcesPage, meta: { label: "Data Sources", icon: "lucide-plug" } },
+		// `props: true` so the pages take `name`/`table` as declared props rather
+		// than reaching into `$route` - the same shape the builder pages use.
+		{ path: "/data-sources/:name", name: "Data Source Tables", component: DataSourceTablesPage, props: true, meta: { label: "Data Source", icon: "lucide-plug" } },
+		{ path: "/data-sources/:name/:table", name: "Data Source Table", component: DataSourceTablePage, props: true, meta: { label: "Table", icon: "lucide-table" } },
 		{ path: "/data-store", name: "Data Store", component: DataStorePage, meta: { label: "Data Store", icon: "lucide-server" } },
-		{ path: "/settings", name: "Settings", component: SettingsPage, meta: { label: "Settings", icon: "lucide-settings" } },
 		{ path: "/:pathMatch(.*)*", redirect: "/" },
 	],
 });

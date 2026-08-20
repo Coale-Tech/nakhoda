@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import unittest
 
-from nakhoda.engine.dashboard import PATCH_OPS, PatchError, apply_patch, validate_patch
+from nakhoda.engine.dashboard import PATCH_OPS, PatchError, apply_patch, normalise, validate_patch
 
 EXISTING = [
 	{
@@ -44,6 +44,103 @@ EXISTING = [
 		"removed": False,
 	},
 ]
+
+#: Exactly what `intelligence_templates/financial/template.json` ships - the
+#: shape that made `set_filter` raise for every panel a template came with.
+SHIPPED = [
+	{"type": "line", "title": "Net Movement Over Time", "measure": "net_movement", "x": "posting_date"},
+	{"type": "bar", "title": "Movement by Account", "measure": "net_movement", "x": "account"},
+]
+
+SHIPPED_METRICS = [
+	{"label": "Net Movement", "expression": "{}", "format": "Currency"},
+	{"label": "Posting Volume", "expression": "{}", "format": "Number"},
+]
+
+
+class Normalise(unittest.TestCase):
+	"""The import/read repair that makes a shipped panel a first-class item.
+
+	Three defects in one function: no `i` (so `_index` could never find it),
+	`type`/`x` in the shipped spelling rather than `chart_type`/`dimension`,
+	and a `measure` slug that pointed at a metric label nothing ever
+	resolved."""
+
+	def test_a_shipped_panel_becomes_patchable(self):
+		"""The gate: `set_filter` on a freshly imported dashboard's panel
+		raised `PatchError` before this existed."""
+		panels = normalise(SHIPPED, SHIPPED_METRICS)
+		_, diff = apply_patch(
+			panels, [{"op": "set_filter", "i": "panel_1", "column": "account", "operator": "=", "value": "X"}]
+		)
+		self.assertEqual(diff[0]["i"], "panel_1")
+		self.assertEqual(diff[0]["state"], "will_change")
+
+	def test_a_shipped_panel_becomes_removable(self):
+		panels = normalise(SHIPPED, SHIPPED_METRICS)
+		new_panels, diff = apply_patch(panels, [{"op": "remove_item", "i": "panel_2"}])
+		self.assertEqual(diff[0]["state"], "removed")
+		self.assertTrue(new_panels[1]["removed"])
+
+	def test_ids_are_positional_and_never_collide_with_minted_ones(self):
+		panels = normalise(SHIPPED, SHIPPED_METRICS)
+		self.assertEqual([p["i"] for p in panels], ["panel_1", "panel_2"])
+		added, _ = apply_patch(
+			panels,
+			[
+				{
+					"op": "add_chart",
+					"chart_type": "bar",
+					"query": "q_new",
+					"layout": {"x": 0, "y": 0, "w": 6, "h": 6},
+				}
+			],
+		)
+		self.assertEqual(added[-1]["i"], "chart_1")
+
+	def test_the_shipped_geometry_moves_to_chart_type(self):
+		panels = normalise(SHIPPED, SHIPPED_METRICS)
+		self.assertEqual([p["chart_type"] for p in panels], ["line", "bar"])
+		self.assertEqual([p["type"] for p in panels], ["chart", "chart"])
+		self.assertEqual([p["dimension"] for p in panels], ["posting_date", "account"])
+
+	def test_the_measure_slug_resolves_to_its_metric_label(self):
+		panels = normalise(SHIPPED, SHIPPED_METRICS)
+		self.assertEqual([p["measure"] for p in panels], ["Net Movement", "Net Movement"])
+
+	def test_an_unmatched_measure_survives_verbatim(self):
+		"""A panel naming a metric this dashboard no longer carries still
+		renders its title rather than vanishing."""
+		panels = normalise([{"type": "bar", "measure": "gone_away"}], SHIPPED_METRICS)
+		self.assertEqual(panels[0]["measure"], "gone_away")
+		self.assertEqual(panels[0]["title"], "gone_away")
+
+	def test_normalising_is_idempotent(self):
+		once = normalise(SHIPPED, SHIPPED_METRICS)
+		self.assertEqual(normalise(once, SHIPPED_METRICS), once)
+
+	def test_an_already_canonical_panel_keeps_every_value_it_had(self):
+		"""`add_chart` writes `dimension`/`measure` as `None` when the op
+		omitted them, so filling those two in is canonicalisation, not a
+		change - nothing an existing panel actually carried is altered."""
+		normalised = normalise(EXISTING, [])
+		for before, after in zip(EXISTING, normalised, strict=True):
+			self.assertEqual(after, {**before, "dimension": None, "measure": None})
+
+	def test_metric_rows_are_read_through_get_not_as_mappings(self):
+		"""A live `Nakhoda Intelligence Metric` child row is a `Document`, not
+		a `Mapping` - resolving must not depend on which one arrived."""
+
+		class Row:
+			def __init__(self, label):
+				self._label = label
+
+			def get(self, key):
+				return self._label if key == "label" else None
+
+		panels = normalise(SHIPPED, [Row("Net Movement")])
+		self.assertEqual(panels[0]["measure"], "Net Movement")
+
 
 
 class Grammar(unittest.TestCase):

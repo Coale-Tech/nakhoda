@@ -1,0 +1,191 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-19 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "user",
+  "space",
+  "dashboard",
+  "question",
+  "loop_section",
+  "steps",
+  "step_count",
+  "output_section",
+  "report",
+  "patch_ops",
+  "patch_diff",
+  "applied_version",
+  "outcome_section",
+  "status",
+  "error",
+  "execution_time"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "User",
+   "options": "User",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "space",
+   "fieldtype": "Link",
+   "label": "Space",
+   "options": "Nakhoda Space",
+   "read_only": 1
+  },
+  {
+   "description": "The dashboard this prompt was asked on. Its panel list, `source` tables and `skill` playbook are what scoped the loop's prompt.",
+   "fieldname": "dashboard",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Dashboard",
+   "options": "Nakhoda Intelligence Template",
+   "read_only": 1
+  },
+  {
+   "fieldname": "question",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Question",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "loop_section",
+   "fieldtype": "Section Break",
+   "label": "Loop"
+  },
+  {
+   "description": "Every action the loop took, in order: the JSON envelope the model emitted, and the bounded observation handed back. The prompt each step saw is reconstructable from this plus the dashboard; the SQL each `ask_data` ran is on its own `Nakhoda Agent Run` child.",
+   "fieldname": "steps",
+   "fieldtype": "Code",
+   "label": "Steps",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "description": "How many actions the loop took before terminating. Bounded by `agent/thread.py:MAX_STEPS`.",
+   "fieldname": "step_count",
+   "fieldtype": "Int",
+   "label": "Step Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "output_section",
+   "fieldtype": "Section Break",
+   "label": "Output"
+  },
+  {
+   "description": "Markdown, when the loop chose `write_report`. `chart://<agent run>` references are resolved at read time by re-running that run's stored pipeline, so a report re-checks permissions rather than embedding a snapshot.",
+   "fieldname": "report",
+   "fieldtype": "Long Text",
+   "label": "Report",
+   "read_only": 1
+  },
+  {
+   "description": "The `DashboardPatch` ops the loop proposed. Validated and diffed, never applied - applying is a separate, user-approved call to `apply_dashboard_patch`.",
+   "fieldname": "patch_ops",
+   "fieldtype": "Code",
+   "label": "Patch Ops",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "description": "The `{i, title, state, field}` preview the approval screen renders for `patch_ops`.",
+   "fieldname": "patch_diff",
+   "fieldtype": "Code",
+   "label": "Patch Diff",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "description": "Set only once a user approved this turn's patch - the version `revert_dashboard_patch` undoes. Empty on a turn whose proposal was never applied.",
+   "fieldname": "applied_version",
+   "fieldtype": "Link",
+   "label": "Applied Version",
+   "options": "Nakhoda Dashboard Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "outcome_section",
+   "fieldtype": "Section Break",
+   "label": "Outcome"
+  },
+  {
+   "default": "ok",
+   "description": "`budget` means the step or data-step ceiling was reached with whatever was learned returned - never a silent truncation.",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "ok\nerror\nbudget",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "execution_time",
+   "fieldtype": "Float",
+   "label": "Execution Time",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-19 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nakhoda",
+ "name": "Nakhoda Thread Turn",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "if_owner": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda User"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

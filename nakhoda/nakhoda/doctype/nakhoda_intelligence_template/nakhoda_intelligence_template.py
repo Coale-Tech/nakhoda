@@ -30,6 +30,7 @@ from frappe.model.document import Document
 from frappe.utils import now_datetime
 
 from nakhoda.engine.dashboard import apply_patch as compile_patch
+from nakhoda.engine.dashboard import normalise
 
 _ADMIN_ROLES = ["Nakhoda Admin", "System Manager"]
 
@@ -76,7 +77,15 @@ class NakhodaIntelligenceTemplate(Document):
 		"""
 		frappe.only_for(_ADMIN_ROLES)
 
-		current = frappe.parse_json(self.panels) if self.panels else []
+		prior = frappe.parse_json(self.panels) if self.panels else []
+		# Patched normalised, snapshotted raw. A shipped panel has no `i` (and
+		# calls its chart type `type`), so patching what is literally stored
+		# would make every op against a freshly imported dashboard fail for the
+		# wrong reason - the same repair-on-read `api/templates.py` and
+		# `panel_data` do. `prior_panels` keeps the bytes that were actually
+		# there, so `revert` restores the record rather than a canonicalisation
+		# of it.
+		current = normalise(prior, self.get("metrics"))
 		new_panels, diff = compile_patch(current, ops)
 
 		version = frappe.get_doc(
@@ -87,7 +96,7 @@ class NakhodaIntelligenceTemplate(Document):
 				"applied_on": now_datetime(),
 				"patch_ops": json.dumps(list(ops)),
 				"diff": json.dumps(diff),
-				"prior_panels": json.dumps(current),
+				"prior_panels": json.dumps(prior),
 			}
 		)
 		version.insert(ignore_permissions=True)

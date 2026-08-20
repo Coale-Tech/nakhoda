@@ -29,7 +29,8 @@ test.describe("query builder", () => {
 		await page.locator("textarea").blur();
 		await runQuery(page);
 		await saveQuery(page);
-		await expect(page.locator("main .text-base-semibold")).toContainText("NKQ-00001");
+		// The builder names itself in the header's `Breadcrumbs`, not a title span.
+		await expect(page.locator("header")).toContainText("NKQ-00001");
 	});
 
 	test("the source selector discovers DocTypes and sets the first operation", async ({ page }) => {

@@ -14,6 +14,7 @@
   "is_child_table",
   "sync_section",
   "stored_in_warehouse",
+  "row_limit",
   "sync_state",
   "row_count",
   "last_synced",
@@ -66,6 +67,12 @@
    "fieldname": "stored_in_warehouse",
    "fieldtype": "Check",
    "label": "Stored In Warehouse"
+  },
+  {
+   "description": "Per-table override of `Nakhoda Settings.max_records_to_sync`. Zero or unset means the site-wide cap applies.",
+   "fieldname": "row_limit",
+   "fieldtype": "Int",
+   "label": "Row Limit"
   },
   {
    "default": "Never",

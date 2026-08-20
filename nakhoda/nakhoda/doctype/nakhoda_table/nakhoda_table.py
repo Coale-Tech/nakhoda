@@ -9,7 +9,6 @@ from frappe.model.document import Document
 
 
 class NakhodaTable(Document):
-
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -24,6 +23,7 @@ class NakhodaTable(Document):
 		label: DF.Data | None
 		last_synced: DF.Datetime | None
 		row_count: DF.Int
+		row_limit: DF.Int
 		stored_in_warehouse: DF.Check
 		sync_error: DF.SmallText | None
 		sync_state: DF.Literal["Never", "Syncing", "Synced", "Failed"]
@@ -32,6 +32,11 @@ class NakhodaTable(Document):
 
 	def validate(self) -> None:
 		if self.document_type and not self.label:
-			self.label = frappe.get_meta(self.document_type).get_label()
+			# `Meta.get_label(fieldname)` labels one *field*; a DocType has no
+			# separate display label distinct from its own name, so this is a
+			# plain default rather than a translated lookup - matches
+			# `nakhoda.api.query.list_sources`, which uses the bare doctype
+			# name as `label` for the same reason.
+			self.label = self.document_type
 		if self.document_type:
 			self.is_child_table = bool(getattr(frappe.get_meta(self.document_type), "istable", 0))

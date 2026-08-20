@@ -136,15 +136,29 @@ website_route_rules = [
 
 # Permissions
 # -----------
-# Permissions evaluated in scripted ways
-
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
+# The workbook family is owner-private until shared, which DocType permissions
+# cannot express on their own - `if_owner` would make a share unreachable. The
+# roles carry table-wide read/write and `nakhoda/permissions.py` narrows it:
+# yours if you own it, if it is shared with you, or if its workbook is.
 #
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+# Both hooks are needed and answer different questions. `has_permission` guards
+# one loaded document (every save, delete and `check_permission` call);
+# `permission_query_conditions` filters list queries, without which a list page
+# would show titles that refuse when clicked.
+
+_WORKBOOK_FAMILY = (
+	"Nakhoda Workbook",
+	"Nakhoda Query",
+	"Nakhoda Chart",
+	"Nakhoda Dashboard",
+	"Nakhoda Folder",
+)
+
+permission_query_conditions = {
+	doctype: "nakhoda.permissions.get_permission_query_conditions" for doctype in _WORKBOOK_FAMILY
+}
+
+has_permission = {doctype: "nakhoda.permissions.has_doc_permission" for doctype in _WORKBOOK_FAMILY}
 
 # DocType Class
 # ---------------
@@ -156,44 +170,56 @@ website_route_rules = [
 
 # Document Events
 # ---------------
-# Hook on document methods and events
-
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+# Nothing here. The curated semantic layer is cached and needs invalidating on
+# every write, but both writable doctypes own that in their own `on_update` /
+# `on_trash` (`nakhoda_semantic_model.py`, `nakhoda_metric.py`) - colocated with
+# the field the cache is built from, rather than in a table an app-wide file
+# keeps. One mechanism, not two: a `doc_events` entry beside those controllers
+# would fire the same `curation.forget()` twice per save.
 
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"nakhoda.tasks.all"
-# 	],
-# 	"daily": [
-# 		"nakhoda.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"nakhoda.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"nakhoda.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"nakhoda.tasks.monthly"
-# 	],
-# }
+# `agent/quota.py` opens a new window lazily on every read, so `reset_quota` is
+# only a backstop for a site nobody asks a question on - not the mechanism.
+# The two Data Store jobs are load-bearing: `sync_stored_tables` re-copies only
+# tables an admin already imported (never widens the warehouse on a cron), and
+# `expire_stale_imports` is what stops a killed worker leaving a table on
+# "Syncing" forever, which would make its own duplicate guard refuse every
+# retry (see `api/data_store.py`).
+# `profile.refresh` scans which columns this site never fills. It is worth eight
+# of the forty gold retrieval questions and costs 68s, which is why it is a
+# nightly artifact rather than something `build_index` establishes per question
+# (see `semantic/profile.py`).
+scheduler_events = {
+	"hourly": [
+		"nakhoda.api.data_store.expire_stale_imports",
+	],
+	"daily": [
+		"nakhoda.agent.quota.reset_quota",
+		"nakhoda.api.data_store.sync_stored_tables",
+		"nakhoda.semantic.profile.refresh",
+	],
+}
 
 # Migration
 # ---------
-# Push a newer shipped Intelligence Template version into every pristine
-# (unedited) imported copy. A site-edited copy is left alone - see
+# Three jobs. Push a newer shipped Intelligence Template version into every
+# pristine (unedited) imported copy - a site-edited copy is left alone, see
 # api/templates.py:sync_intelligence_template_updates and build-plan Phase 9.
+# Then rebuild the column profile, because a migration is exactly when columns
+# appear and disappear, and because the design already promises the semantic
+# model regenerates on `bench migrate`.
+# `curation.sync` then upserts a semantic row per document this site actually
+# uses, from that fresh profile. It runs last because it reads what the profile
+# just wrote, and it never overwrites a hand-edited row - a curator's words
+# survive every migration (see `semantic/curation.py`).
 
-after_migrate = "nakhoda.api.templates.sync_intelligence_template_updates"
+after_migrate = [
+	"nakhoda.api.templates.sync_intelligence_template_updates",
+	"nakhoda.semantic.profile.refresh",
+	"nakhoda.semantic.curation.sync",
+]
 
 # Fixtures
 # --------

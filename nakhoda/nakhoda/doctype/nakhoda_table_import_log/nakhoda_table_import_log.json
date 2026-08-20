@@ -1,0 +1,168 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-08-15 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "data_source",
+  "document_type",
+  "table_name",
+  "column_break_target",
+  "status",
+  "started_at",
+  "ended_at",
+  "limits_section",
+  "row_limit",
+  "memory_limit",
+  "column_break_limits",
+  "row_count",
+  "time_taken",
+  "output_section",
+  "output"
+ ],
+ "fields": [
+  {
+   "fieldname": "data_source",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Data Source",
+   "options": "Nakhoda Data Source",
+   "read_only": 1
+  },
+  {
+   "fieldname": "document_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "DocType",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "description": "Physical table written, e.g. `tabSales Invoice`.",
+   "fieldname": "table_name",
+   "fieldtype": "Data",
+   "label": "Table Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_target",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "In Progress",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "In Progress\nCompleted\nFailed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At",
+   "read_only": 1
+  },
+  {
+   "description": "Unset while the job is still running. `expire_stale_imports` reads the gap between this and `started_at` to retire jobs whose worker died.",
+   "fieldname": "ended_at",
+   "fieldtype": "Datetime",
+   "label": "Ended At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "limits_section",
+   "fieldtype": "Section Break",
+   "label": "Limits Applied"
+  },
+  {
+   "description": "The effective cap this run used, after `Nakhoda Table.row_limit` and `Nakhoda Settings.max_records_to_sync` were resolved.",
+   "fieldname": "row_limit",
+   "fieldtype": "Int",
+   "label": "Row Limit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "memory_limit",
+   "fieldtype": "Int",
+   "label": "Memory Limit (MB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_limits",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "row_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Rows Written",
+   "read_only": 1
+  },
+  {
+   "fieldname": "time_taken",
+   "fieldtype": "Float",
+   "label": "Time Taken (s)",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "output_section",
+   "fieldtype": "Section Break",
+   "label": "Output"
+  },
+  {
+   "fieldname": "output",
+   "fieldtype": "Code",
+   "label": "Output",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-08-15 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nakhoda",
+ "name": "Nakhoda Table Import Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda Admin",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda User",
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "table_name"
+}

@@ -31,7 +31,8 @@ from pathlib import Path
 
 import ibis
 
-from nakhoda.engine import cache, permissions
+from nakhoda.connectors import Connector
+from nakhoda.engine import cache, permissions, pipeline
 from nakhoda.engine.operations import compile_pipeline
 
 FIXTURE = Path("/tmp/semantic-bench/erp.duckdb")
@@ -85,10 +86,7 @@ def territory_fragment(*allowed: str) -> str:
 	only the fieldname and the permitted values differ.
 	"""
 	values = ", ".join(f"'{v}'" for v in allowed)
-	return (
-		f"(((ifnull(`{INVOICES}`.`territory`, '')='' "
-		f"or `{INVOICES}`.`territory` in ({values}))))"
-	)
+	return f"(((ifnull(`{INVOICES}`.`territory`, '')='' or `{INVOICES}`.`territory` in ({values}))))"
 
 
 class RecordedPolicy:
@@ -142,7 +140,9 @@ class GateB(unittest.TestCase):
 				{"type": "source", "table": INVOICES},
 				{
 					"type": "summarize",
-					"measures": [{"name": "total", "expr": {"fn": "sum", "args": [{"col": "base_grand_total"}]}}],
+					"measures": [
+						{"name": "total", "expr": {"fn": "sum", "args": [{"col": "base_grand_total"}]}}
+					],
 				},
 			],
 			resolver,
@@ -206,9 +206,15 @@ class GateB(unittest.TestCase):
 		germany = self.total_for(RecordedPolicy({"Sales Invoice": (True, territory_fragment("Germany"))}))
 		texas = self.total_for(RecordedPolicy({"Sales Invoice": (True, territory_fragment("Texas"))}))
 
-		expect = "SELECT sum(base_grand_total) FROM \"{t}\" WHERE ifnull(territory,'')='' OR territory IN ({v})"
-		self.assertAlmostEqual(germany, float(self.sql_scalar(expect.format(t=INVOICES, v="'Germany'"))), places=4)
-		self.assertAlmostEqual(texas, float(self.sql_scalar(expect.format(t=INVOICES, v="'Texas'"))), places=4)
+		expect = (
+			"SELECT sum(base_grand_total) FROM \"{t}\" WHERE ifnull(territory,'')='' OR territory IN ({v})"
+		)
+		self.assertAlmostEqual(
+			germany, float(self.sql_scalar(expect.format(t=INVOICES, v="'Germany'"))), places=4
+		)
+		self.assertAlmostEqual(
+			texas, float(self.sql_scalar(expect.format(t=INVOICES, v="'Texas'"))), places=4
+		)
 
 		self.assertNotAlmostEqual(germany, texas, places=2)
 		unrestricted = self.total_for(RecordedPolicy())
@@ -248,7 +254,9 @@ class GateB(unittest.TestCase):
 			)
 		)
 		self.assertEqual(got, expected)
-		self.assertGreater(expected, 0, "the fixture must have German invoice lines for this to mean anything")
+		self.assertGreater(
+			expected, 0, "the fixture must have German invoice lines for this to mean anything"
+		)
 
 		total = int(self.sql_scalar(f'SELECT count(*) FROM "{ITEMS}"'))
 		self.assertLess(got, total)
@@ -270,6 +278,43 @@ class GateB(unittest.TestCase):
 		)
 		self.assertEqual(int(self.con.execute(expr).iloc[0]["n"]), 0)
 
+	def test_a_child_keeps_its_parent_gate_when_the_join_keys_are_not_readable(self):
+		"""The grain rule cannot be switched off by the column policy.
+
+		`parent`/`parenttype` are how the grain is enforced, not columns a caller
+		asked for. Projecting first deleted them, `_permitted_child` then found no
+		keys to join on and emptied the table. Failing shut is safer than failing
+		open, but it failed shut on *every* question about line items - which is
+		how the live defect of 2026-08-17 presented, `Sales Invoice Item` arriving
+		with 7 of its 168 columns.
+		"""
+		policy = RecordedPolicy(
+			{"Sales Invoice": (True, territory_fragment("Germany"))},
+			columns={"Sales Invoice Item": {"name", "base_net_amount"}},
+			parents={"Sales Invoice Item": ["Sales Invoice"]},
+			children=frozenset({"Sales Invoice Item"}),
+		)
+		resolver = permissions.permitted_resolver(self.resolve, policy)
+		self.assertEqual(set(resolver(ITEMS).columns), {"name", "base_net_amount"})
+
+		expr = compile_pipeline(
+			[
+				{"type": "source", "table": ITEMS},
+				{"type": "summarize", "measures": [{"name": "n", "expr": {"fn": "count", "args": []}}]},
+			],
+			resolver,
+		)
+		got = int(self.con.execute(expr).iloc[0]["n"])
+		expected = int(
+			self.sql_scalar(
+				f'SELECT count(*) FROM "{ITEMS}" i JOIN "{INVOICES}" s ON i.parent = s.name '
+				f"AND i.parenttype = 'Sales Invoice' "
+				f"WHERE ifnull(s.territory,'')='' OR s.territory IN ('Germany')"
+			)
+		)
+		self.assertEqual(got, expected, "the parent gate must survive a projection dropping its keys")
+		self.assertGreater(expected, 0, "the fixture must have German invoice lines to mean anything")
+
 	# -- the property the cache inherits ------------------------------------
 
 	def test_permissions_reach_the_compiled_sql(self):
@@ -287,7 +332,10 @@ class GateB(unittest.TestCase):
 		)
 		pipeline = [
 			{"type": "source", "table": INVOICES},
-			{"type": "summarize", "measures": [{"name": "total", "expr": {"fn": "sum", "args": [{"col": "base_grand_total"}]}}]},
+			{
+				"type": "summarize",
+				"measures": [{"name": "total", "expr": {"fn": "sum", "args": [{"col": "base_grand_total"}]}}],
+			},
 		]
 		sql_g = str(ibis.to_sql(compile_pipeline(pipeline, germany), dialect="duckdb"))
 		sql_t = str(ibis.to_sql(compile_pipeline(pipeline, texas), dialect="duckdb"))
@@ -305,6 +353,248 @@ class GateB(unittest.TestCase):
 			cache.key(sql_g, "site:other"),
 			"the same SQL against different data must not share a cache entry",
 		)
+
+
+@unittest.skipUnless(FIXTURE.exists(), f"needs the benchmark fixture at {FIXTURE}")
+class ExcludedRows(unittest.TestCase):
+	"""`permissions.excluded()` / `excluded_resolver()`: the structural
+	complement `pipeline.notice()` runs to answer "what did permissions
+	remove from this query" - `14-frontend-design.md` §3.
+	"""
+
+	@classmethod
+	def setUpClass(cls) -> None:
+		cls.con = ibis.duckdb.connect(str(FIXTURE), read_only=True)
+		cls.resolve = cls.con.table
+		cls.connector = Connector(backend=cls.con, identity="duckdb:fixture")
+
+	def invoice_count(self, resolver) -> int:
+		expr = compile_pipeline(
+			[
+				{"type": "source", "table": INVOICES},
+				{"type": "summarize", "measures": [{"name": "n", "expr": {"fn": "count", "args": []}}]},
+			],
+			resolver,
+		)
+		return int(self.con.execute(expr).iloc[0]["n"])
+
+	def test_none_when_unrestricted(self):
+		table = self.resolve(INVOICES)
+		self.assertIsNone(permissions.excluded(table, "Sales Invoice", RecordedPolicy(), self.resolve))
+
+	def test_none_when_denied_outright(self):
+		"""Global denial is `permitted()`'s own answer (zero rows); the notice adds nothing."""
+		table = self.resolve(INVOICES)
+		policy = RecordedPolicy({"Sales Invoice": (False, None)})
+		self.assertIsNone(permissions.excluded(table, "Sales Invoice", policy, self.resolve))
+
+	def test_none_for_a_child_doctype(self):
+		table = self.resolve(ITEMS)
+		policy = RecordedPolicy(
+			{"Sales Invoice": (True, territory_fragment("Germany"))},
+			parents={"Sales Invoice Item": ["Sales Invoice"]},
+			children=frozenset({"Sales Invoice Item"}),
+		)
+		self.assertIsNone(permissions.excluded(table, "Sales Invoice Item", policy, self.resolve))
+
+	def test_is_the_complement_of_permitted(self):
+		"""Permitted + excluded reconstructs the unrestricted total, exactly."""
+		policy = RecordedPolicy({"Sales Invoice": (True, territory_fragment("Germany"))})
+		permitted = self.invoice_count(permissions.permitted_resolver(self.resolve, policy))
+		excl_resolve, reasons = permissions.excluded_resolver(self.resolve, policy)
+		excluded_n = self.invoice_count(excl_resolve)
+		unrestricted = self.invoice_count(permissions.permitted_resolver(self.resolve, RecordedPolicy()))
+
+		self.assertEqual(permitted + excluded_n, unrestricted)
+		self.assertGreater(
+			excluded_n, 0, "the fixture must have non-German invoices for this to mean anything"
+		)
+		self.assertEqual(reasons["tabSales Invoice"], "territory permissions")
+
+	def test_reason_names_every_restricted_column(self):
+		fragment = f"({territory_fragment('Germany')}) and `{INVOICES}`.`customer` = 'Acme'"
+		policy = RecordedPolicy({"Sales Invoice": (True, fragment)})
+		found = permissions.excluded(self.resolve(INVOICES), "Sales Invoice", policy, self.resolve)
+		self.assertIsNotNone(found)
+		self.assertEqual(found[1], "customer and territory permissions")
+
+
+class FiltersApplied(unittest.TestCase):
+	"""`permissions.filters_applied()`: the read-only complement of
+	`permitted()` used for origin-badge provenance (`14-frontend-design.md`
+	§6) - names which touched tables carry an active row filter, without
+	compiling or executing anything. Pure, so no fixture needed.
+	"""
+
+	def test_empty_when_nothing_restricted(self):
+		self.assertEqual(permissions.filters_applied(["Sales Invoice"], RecordedPolicy()), [])
+
+	def test_empty_when_denied_outright(self):
+		"""Global denial has no row-level fragment to name; `permitted()` already shows zero rows."""
+		policy = RecordedPolicy({"Sales Invoice": (False, None)})
+		self.assertEqual(permissions.filters_applied(["Sales Invoice"], policy), [])
+
+	def test_skips_child_doctypes(self):
+		"""A child's grain is its parent's - reporting a filter on the child directly would misattribute it."""
+		policy = RecordedPolicy(
+			{"Sales Invoice Item": (True, territory_fragment("Germany"))},
+			children=frozenset({"Sales Invoice Item"}),
+		)
+		self.assertEqual(permissions.filters_applied(["Sales Invoice Item"], policy), [])
+
+	def test_names_the_restricted_table_and_column(self):
+		policy = RecordedPolicy({"Sales Invoice": (True, territory_fragment("Germany"))})
+		self.assertEqual(
+			permissions.filters_applied(["Sales Invoice"], policy),
+			[{"table": "tabSales Invoice", "reason": "territory permissions"}],
+		)
+
+	def test_names_every_restricted_column(self):
+		fragment = f"({territory_fragment('Germany')}) and `{INVOICES}`.`customer` = 'Acme'"
+		policy = RecordedPolicy({"Sales Invoice": (True, fragment)})
+		found = permissions.filters_applied(["Sales Invoice"], policy)
+		self.assertEqual(
+			found, [{"table": "tabSales Invoice", "reason": "customer and territory permissions"}]
+		)
+
+	def test_multiple_tables_sorted_by_table_name(self):
+		policy = RecordedPolicy(
+			{
+				"Sales Invoice": (True, territory_fragment("Germany")),
+				"Employee": (True, "`tabEmployee`.`company` = 'JKM Chemtrade'"),
+			}
+		)
+		found = permissions.filters_applied(["Sales Invoice", "Employee"], policy)
+		self.assertEqual([entry["table"] for entry in found], sorted(entry["table"] for entry in found))
+		self.assertEqual({entry["table"] for entry in found}, {"tabSales Invoice", "tabEmployee"})
+
+	def test_unreadable_fragment_contributes_nothing(self):
+		"""Same fail-toward-less rule as `row_filter()`: an unparseable condition is absent, not fabricated."""
+		policy = RecordedPolicy(
+			{"Sales Invoice": (True, f"`{INVOICES}`.`name` in (select name from `tabCustomer`)")}
+		)
+		# `filters_applied` never parses with the fragment grammar - it only
+		# needs the referenced columns, which sqlglot still finds in a
+		# subquery - so this is readable here even though `row_filter` (and
+		# therefore `permitted()`) would refuse it. That divergence is
+		# acceptable: this function only answers "was a filter injected",
+		# never "what rows does it admit".
+		found = permissions.filters_applied(["Sales Invoice"], policy)
+		self.assertEqual(found, [{"table": "tabSales Invoice", "reason": "name permissions"}])
+
+
+@unittest.skipUnless(FIXTURE.exists(), f"needs the benchmark fixture at {FIXTURE}")
+class Notice(unittest.TestCase):
+	"""`pipeline.notice()`: the endpoint-facing surface `excluded_resolver` feeds."""
+
+	@classmethod
+	def setUpClass(cls) -> None:
+		cls.con = ibis.duckdb.connect(str(FIXTURE), read_only=True)
+		cls.connector = Connector(backend=cls.con, identity="duckdb:fixture")
+
+	def query(self) -> list[dict]:
+		return [
+			{"type": "source", "table": INVOICES},
+			{
+				"type": "summarize",
+				"measures": [{"name": "total", "expr": {"fn": "sum", "args": [{"col": "base_grand_total"}]}}],
+			},
+		]
+
+	def test_none_when_nothing_is_restricted(self):
+		result = pipeline.notice(self.query(), self.con.table, RecordedPolicy(), self.connector)
+		self.assertIsNone(result)
+
+	def test_none_when_denied_outright(self):
+		policy = RecordedPolicy({"Sales Invoice": (False, None)})
+		result = pipeline.notice(self.query(), self.con.table, policy, self.connector)
+		self.assertIsNone(result)
+
+	def test_reports_excluded_count_and_amount_when_restricted(self):
+		policy = RecordedPolicy({"Sales Invoice": (True, territory_fragment("Germany"))})
+		result = pipeline.notice(self.query(), self.con.table, policy, self.connector)
+		self.assertIsNotNone(result)
+		self.assertGreater(result["excluded_count"], 0)
+		self.assertEqual(result["reason"], "territory permissions")
+
+		# The notice reports what the fragment excluded, so the expectation has
+		# to be the fragment's own complement - written once, read twice.
+		excluded = "NOT (ifnull(territory,'')='' OR territory IN ('Germany'))"
+
+		expect_count = f'SELECT count(*) FROM "{INVOICES}" WHERE {excluded}'
+		self.assertEqual(result["excluded_count"], int(self.con.raw_sql(expect_count).fetchone()[0]))
+
+		expect_sum = f'SELECT sum(base_grand_total) FROM "{INVOICES}" WHERE {excluded}'
+		self.assertEqual(
+			result["excluded_amount"],
+			pipeline._format_amount(float(self.con.raw_sql(expect_sum).fetchone()[0])),
+		)
+
+	def test_amount_is_blank_without_a_single_sum_measure(self):
+		"""No `summarize` step names a measure, so there is nothing to total - only count."""
+		policy = RecordedPolicy({"Sales Invoice": (True, territory_fragment("Germany"))})
+		query = [{"type": "source", "table": INVOICES}, {"type": "limit", "n": 50}]
+		result = pipeline.notice(query, self.con.table, policy, self.connector)
+		self.assertIsNotNone(result)
+		self.assertGreater(result["excluded_count"], 0)
+		self.assertEqual(result["excluded_amount"], "")
+
+	def test_counts_raw_rows_not_aggregated_result_rows(self):
+		"""A `summarize` collapses to one row per territory - the notice must not report that."""
+		policy = RecordedPolicy({"Sales Invoice": (True, territory_fragment("Germany"))})
+		result = pipeline.notice(self.query(), self.con.table, policy, self.connector)
+		self.assertIsNotNone(result)
+		self.assertGreater(result["excluded_count"], 1, "the excluded set spans more than one territory")
+
+
+class Injected(unittest.TestCase):
+	"""`pipeline.injected()`: the origin-badge-facing surface `filters_applied`
+	feeds. Pure - no compile, no execute, no fixture needed."""
+
+	def query(self) -> list[dict]:
+		return [
+			{"type": "source", "table": INVOICES},
+			{
+				"type": "summarize",
+				"measures": [{"name": "total", "expr": {"fn": "sum", "args": [{"col": "base_grand_total"}]}}],
+			},
+		]
+
+	def test_none_when_unrestricted(self):
+		self.assertIsNone(pipeline.injected(self.query(), RecordedPolicy()))
+
+	def test_none_when_denied_outright(self):
+		policy = RecordedPolicy({"Sales Invoice": (False, None)})
+		self.assertIsNone(pipeline.injected(self.query(), policy))
+
+	def test_reports_table_and_reason_when_restricted(self):
+		policy = RecordedPolicy({"Sales Invoice": (True, territory_fragment("Germany"))})
+		self.assertEqual(
+			pipeline.injected(self.query(), policy),
+			[{"table": "tabSales Invoice", "reason": "territory permissions"}],
+		)
+
+	def test_covers_every_source_and_join_table(self):
+		"""A pipeline that joins a second restricted table reports both."""
+		query = [
+			{"type": "source", "table": INVOICES},
+			{
+				"type": "join",
+				"table": ITEMS,
+				"how": "inner",
+				"left_on": {"col": "name"},
+				"right_on": {"col": "parent"},
+			},
+		]
+		policy = RecordedPolicy(
+			{
+				"Sales Invoice": (True, territory_fragment("Germany")),
+				"Sales Invoice Item": (True, "`tabSales Invoice Item`.`qty` > 0"),
+			}
+		)
+		found = pipeline.injected(query, policy)
+		self.assertIsNotNone(found)
+		self.assertEqual({entry["table"] for entry in found}, {"tabSales Invoice", "tabSales Invoice Item"})
 
 
 if __name__ == "__main__":

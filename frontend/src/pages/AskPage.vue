@@ -1,19 +1,52 @@
 <script setup>
 import { computed, nextTick, ref } from "vue";
 import { useRouter } from "vue-router";
-import { Badge, Button, ScrollArea, Textarea } from "frappe-ui";
+import { Breadcrumbs, Button, ScrollArea } from "frappe-ui";
+import AskComposer from "../components/AskComposer.vue";
 import Turn from "../components/Turn.vue";
 import ErrorTurn from "../components/ErrorTurn.vue";
 import Inspector from "../components/Inspector.vue";
+import SaveToWorkbookDialog from "../components/SaveToWorkbookDialog.vue";
 import { useAsk } from "../agent.js";
+import { useAskStore } from "../stores/ask.js";
 
 // Live conversation state - no demo data. `nakhoda.api.agent.ask` is called
-// per question (`src/agent.js`); `turns` only ever holds what that endpoint,
+// per question (`src/agent.js`); the thread only ever holds what that endpoint,
 // and the `Nakhoda Agent Run` it writes, actually returned.
-const turns = ref([]);
-const question = ref("");
+//
+// The thread lives in `stores/ask.js` under this route's own scope rather than
+// in a local ref: a workbook can now ask too, and leaving for one - or for the
+// query a save just created - must not be the thing that discards the
+// conversation.
+const thread = useAskStore().thread("ask");
+const turns = computed(() => thread.turns);
 const router = useRouter();
 const { ask, pending } = useAsk();
+
+// The turn whose answer is being saved. One dialog for the whole list rather
+// than one per turn: only one can be open, and mounting N dialogs to show one
+// is how a conversation of forty answers gets slow.
+const savingTurn = ref(null);
+const savedNotice = ref(null);
+
+/**
+ * `save_answer` hands back the workbook and the query it created, which is
+ * exactly enough to link straight at the saved item rather than telling the
+ * user it "worked" and leaving them to find it.
+ */
+function onSaved(saved) {
+	savedNotice.value = saved;
+}
+
+function openSaved() {
+	const saved = savedNotice.value;
+	if (!saved) return;
+	savedNotice.value = null;
+	router.push({
+		name: "Workbook Item",
+		params: { name: saved.workbook, itemType: "query", itemId: saved.query },
+	});
+}
 
 // The scroll area owns the turns list; the composer sits below it as a real
 // footer rather than a sticky overlay. ScrollArea exposes the actual scrolling
@@ -21,10 +54,10 @@ const { ask, pending } = useAsk();
 const scrollArea = ref(null);
 
 async function submit() {
-	const text = question.value.trim();
+	const text = thread.question.trim();
 	if (!text || pending.value) return;
-	question.value = "";
-	turns.value.push(await ask(text));
+	thread.question = "";
+	thread.turns.push(await ask(text));
 	await nextTick();
 	const el = scrollArea.value?.viewportElement;
 	if (el) el.scrollTop = el.scrollHeight;
@@ -59,7 +92,13 @@ function openInBuilder(turn) {
 </script>
 
 <template>
-	<div class="flex h-full min-h-0">
+	<header
+		class="flex h-12 shrink-0 items-center justify-between border-b border-outline-gray-2 py-2.5 pl-5 pr-2"
+	>
+		<Breadcrumbs :items="[{ label: 'Ask', route: { name: 'Ask' } }]" />
+	</header>
+
+	<div class="flex min-h-0 flex-1">
 		<div class="flex min-w-0 flex-1 flex-col">
 			<ScrollArea ref="scrollArea" class="min-h-0 flex-1">
 				<div class="mx-auto w-full max-w-3xl px-5 pt-7 pb-10">
@@ -78,20 +117,34 @@ function openInBuilder(turn) {
 					<template v-for="t in turns" :key="t.id">
 						<ErrorTurn v-if="t.error" :turn="t" />
 						<Turn v-else :turn="t">
-							<template v-if="t.answer.inspector" #receipt-actions>
+							<template #receipt-actions>
+								<template v-if="t.answer.inspector">
+									<Button
+										variant="ghost"
+										size="sm"
+										icon-left="lucide-list-tree"
+										:label="`Inspect ${t.answer.stepCount} steps`"
+										@click="inspectingId = t.id"
+									/>
+									<Button
+										variant="ghost"
+										size="sm"
+										icon-left="lucide-pencil"
+										label="Open in builder"
+										@click="openInBuilder(t)"
+									/>
+								</template>
+								<!-- Saving needs the audit row, not the inspector: an
+								     answer with a chart and no operations to inspect is
+								     still worth keeping, and `save_answer` re-reads the
+								     pipeline from that row. -->
 								<Button
+									v-if="t.agentRun"
 									variant="ghost"
 									size="sm"
-									icon-left="lucide-list-tree"
-									:label="`Inspect ${t.answer.stepCount} steps`"
-									@click="inspectingId = t.id"
-								/>
-								<Button
-									variant="ghost"
-									size="sm"
-									icon-left="lucide-pencil"
-									label="Open in builder"
-									@click="openInBuilder(t)"
+									icon-left="lucide-bookmark"
+									label="Save to workbook"
+									@click="savingTurn = t"
 								/>
 							</template>
 						</Turn>
@@ -101,42 +154,7 @@ function openInBuilder(turn) {
 
 			<div class="border-t border-outline-gray-2 bg-surface-base px-5 py-4">
 				<div class="mx-auto w-full max-w-3xl">
-					<Textarea
-						v-model="question"
-						class="composer-input"
-						size="md"
-						variant="outline"
-						:rows="2"
-						:disabled="pending"
-						placeholder="Ask about Finance &amp; Sales…"
-						@keydown.enter.exact.prevent="submit"
-					/>
-					<div class="mt-2 flex items-center gap-2">
-						<Badge theme="gray" variant="subtle" label="Your permissions">
-							<template #prefix>
-								<span class="lucide-lock size-3" aria-hidden="true" />
-							</template>
-						</Badge>
-						<Badge theme="gray" variant="subtle" label="Dry-run first">
-							<template #prefix>
-								<span class="lucide-play size-3" aria-hidden="true" />
-							</template>
-						</Badge>
-						<Button
-							class="ml-auto"
-							variant="solid"
-							theme="gray"
-							size="md"
-							:loading="pending"
-							loading-text="Asking…"
-							label="Ask"
-							@click="submit"
-						>
-							<template #suffix>
-								<span class="lucide-corner-down-left size-4" aria-hidden="true" />
-							</template>
-						</Button>
-					</div>
+					<AskComposer v-model="thread.question" :pending="pending" @submit="submit" />
 				</div>
 			</div>
 		</div>
@@ -153,5 +171,25 @@ function openInBuilder(turn) {
 			@close="inspectingId = null"
 			@rerun="onRerun"
 		/>
+
+		<SaveToWorkbookDialog
+			v-if="savingTurn"
+			:key="savingTurn.id"
+			:model-value="true"
+			:turn="savingTurn"
+			@update:model-value="(open) => !open && (savingTurn = null)"
+			@saved="onSaved"
+		/>
+
+		<!-- The saved answer's own link, not a toast that disappears before it
+		     can be clicked. -->
+		<div
+			v-if="savedNotice"
+			class="fixed bottom-6 left-1/2 z-10 flex -translate-x-1/2 items-center gap-3 rounded-lg border border-outline-gray-2 bg-surface-white px-4 py-2.5 shadow-lg"
+		>
+			<span class="text-p-sm text-ink-gray-7">Saved to workbook.</span>
+			<Button variant="subtle" size="sm" label="Open" @click="openSaved" />
+			<Button variant="ghost" size="sm" icon="x" aria-label="Dismiss" @click="savedNotice = null" />
+		</div>
 	</div>
 </template>

@@ -21,6 +21,7 @@ from __future__ import annotations
 import unittest
 
 import frappe
+from frappe.share import add_docshare
 
 from nakhoda import api
 
@@ -74,6 +75,17 @@ class Endpoints(unittest.TestCase):
 		).insert()
 		return str(doc.name)
 
+	def share_query(self, name: str, user: str) -> None:
+		"""Grant a second caller read on a stored query.
+
+		A query is owner-private until shared (`nakhoda/permissions.py`), so the
+		document boundary would refuse before the data boundary was reached. The
+		tests below are about the second boundary and need the first one open;
+		sharing is how the app opens it, so that is what they do rather than
+		bypassing the check with `ignore_permissions`.
+		"""
+		add_docshare("Nakhoda Query", name, user, read=1)
+
 	# -- the grammar, at the boundary ---------------------------------------
 
 	def test_refused_operations_never_reach_a_database(self):
@@ -98,6 +110,33 @@ class Endpoints(unittest.TestCase):
 		self.assertFalse(report["valid"])
 		self.assertTrue(report["error"])
 		self.assertEqual(api.validate(COUNT_INVOICES), {"valid": True, "error": None})
+
+	def test_a_refusal_the_schema_only_reveals_at_compile_time_is_still_a_refusal(self):
+		"""2026-08-16, from a live model answering "total invoiced per customer":
+		it joined `tabCustomer` and named the joined column `customer_name`,
+		which `tabSales Invoice` already has. `_join` refuses a namespace merge
+		(`engine/operations.py:503`) - but only while *compiling*, because the
+		clash is invisible until both schemas are resolved.
+
+		`validate` therefore passes and `run` refuses, and that refusal has to
+		arrive as a `frappe.ValidationError` like every other one. It escaped as
+		a 500 until the guard covered the whole engine interaction, and a 500 is
+		the one answer `manager._try_tier` cannot escalate.
+		"""
+		collision = [
+			{"type": "source", "table": INVOICES},
+			{
+				"type": "join",
+				"table": "tabCustomer",
+				"left_on": {"col": "customer"},
+				"right_on": {"col": "name"},
+				"select": [{"name": "customer_name", "expr": {"col": "customer_name"}}],
+			},
+		]
+		self.assertEqual(api.validate(collision), {"valid": True, "error": None})
+		with self.assertRaises(frappe.ValidationError) as caught:
+			api.run(collision)
+		self.assertIn("already in scope", str(caught.exception))
 
 	def test_a_stored_query_is_rejected_on_save(self):
 		"""A pipeline that cannot run cannot be stored."""
@@ -159,6 +198,7 @@ class Endpoints(unittest.TestCase):
 			"this test needs a user who cannot read invoices",
 		)
 
+		self.share_query(name, analyst)
 		frappe.set_user(analyst)
 		restricted = api.execute(name)
 		self.assertEqual(int(restricted["rows"][0]["n"]), 0)
@@ -175,6 +215,7 @@ class Endpoints(unittest.TestCase):
 		privileged_key = frappe.db.get_value("Nakhoda Query", name, "cache_key")
 
 		analyst = self.make_user("nakhoda-analyst2@example.com", ["Nakhoda User"])
+		self.share_query(name, analyst)
 		frappe.set_user(analyst)
 		api.execute(name)
 		restricted_key = frappe.db.get_value("Nakhoda Query", name, "cache_key")

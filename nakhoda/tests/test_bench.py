@@ -343,6 +343,17 @@ class Prompting(unittest.TestCase):
 			self.assertIn(context, text)
 			self.assertIn(question, text)
 
+	def test_ops_annotated_prompt_carries_the_grammar_and_asks_for_an_envelope(self):
+		context, question = "SCHEMA", "How many customers are on file?"
+		text = driver.prompt(context, question, "ops_annotated")
+		self.assertIn("OPERATIONS", text)
+		self.assertIn('"ops"', text)
+		self.assertIn('"assumptions"', text)
+		self.assertIn(context, text)
+		self.assertIn(question, text)
+		# Deliberately excluded from the benchmarked tuple - see its docstring.
+		self.assertNotIn("ops_annotated", driver.TARGETS)
+
 	def test_extract_reads_fenced_bare_and_chatty_answers(self):
 		sql, err = driver.extract("```sql\nSELECT 1;\n```", "sql")
 		self.assertEqual((sql, err), ("SELECT 1", None))
@@ -353,6 +364,46 @@ class Prompting(unittest.TestCase):
 		self.assertEqual((ops, err), ([{"type": "source"}], None))
 		ops, _ = driver.extract('Sure! [{"type":"source"}] hope that helps', "ops")
 		self.assertEqual(ops, [{"type": "source"}])
+
+	def test_ops_annotated_extracts_the_envelope_and_validates_assumptions(self):
+		raw = (
+			'{"ops": [{"type": "source"}], "assumptions": ['
+			'{"tag": "period", "state": "applied", "text": "assumed this fiscal year"},'
+			'{"tag": "territory", "state": "needs_you", "text": "assumed all territories",'
+			' "counterfactual": "Kenya only would total less", "alt_label": "Kenya only", "keep_label": "Keep all"}'
+			"]}"
+		)
+		payload, err = driver.extract(raw, "ops_annotated")
+		self.assertIsNone(err)
+		self.assertEqual(payload["ops"], [{"type": "source"}])
+		self.assertEqual(len(payload["assumptions"]), 2)
+		applied, needs_you = payload["assumptions"]
+		self.assertEqual(applied["state"], "applied")
+		self.assertNotIn("counterfactual", applied)
+		self.assertEqual(needs_you["state"], "needs_you")
+		self.assertEqual(needs_you["alt_label"], "Kenya only")
+
+	def test_ops_annotated_drops_malformed_assumptions_without_failing_the_pipeline(self):
+		"""A garbled explanation must never cost a valid `ops` array its answer."""
+		raw = '{"ops": [{"type": "source"}], "assumptions": ["not an object", {"tag": "x"}, {"state": "bogus", "tag": "y", "text": "z"}]}'
+		payload, err = driver.extract(raw, "ops_annotated")
+		self.assertIsNone(err)
+		self.assertEqual(payload["ops"], [{"type": "source"}])
+		self.assertEqual(payload["assumptions"], [])
+
+	def test_ops_annotated_needs_you_without_a_counterfactual_still_counts_as_an_assumption(self):
+		raw = '{"ops": [{"type": "source"}], "assumptions": [{"tag": "x", "state": "needs_you", "text": "picked one reading"}]}'
+		payload, _ = driver.extract(raw, "ops_annotated")
+		self.assertEqual(
+			payload["assumptions"], [{"tag": "x", "state": "needs_you", "text": "picked one reading"}]
+		)
+
+	def test_ops_annotated_accepts_a_bare_array_when_the_model_skips_the_envelope(self):
+		"""Backward-compatible with the exact shape `target == "ops"` has always
+		accepted, so a model that ignores the extra ask still answers."""
+		payload, err = driver.extract('[{"type": "source"}]', "ops_annotated")
+		self.assertIsNone(err)
+		self.assertEqual(payload, {"ops": [{"type": "source"}], "assumptions": []})
 
 	def test_extraction_failure_is_not_a_wrong_answer(self):
 		"""Recorded as its own status: blaming the model for the harness would

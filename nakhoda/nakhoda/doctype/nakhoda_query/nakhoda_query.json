@@ -9,13 +9,19 @@
  "field_order": [
   "title",
   "data_source",
+  "workbook",
+  "folder",
+  "sort_order",
   "operations",
   "execution_section",
   "cache_key",
   "last_row_count",
   "last_execution_time",
   "last_executed_on",
-  "last_executed_by"
+  "last_executed_by",
+  "linked_queries",
+  "origin_section",
+  "agent_run"
  ],
  "fields": [
   {
@@ -32,6 +38,24 @@
    "label": "Data Source",
    "options": "Nakhoda Data Source",
    "reqd": 1
+  },
+  {
+   "description": "The workbook that owns this query, when one does. Ad-hoc queries the agent writes have no workbook and must keep working without one, so this is deliberately not `reqd`.",
+   "fieldname": "workbook",
+   "fieldtype": "Link",
+   "label": "Workbook",
+   "options": "Nakhoda Workbook"
+  },
+  {
+   "description": "Flat grouping label within the workbook's Queries section, not a Link: a query may sit at the root.",
+   "fieldname": "folder",
+   "fieldtype": "Data",
+   "label": "Folder"
+  },
+  {
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Sort Order"
   },
   {
    "description": "The pipeline, as a JSON list. Validated against the closed operation grammar on save, so a malformed query cannot be stored.",
@@ -77,6 +101,26 @@
    "fieldtype": "Link",
    "label": "Last Executed By",
    "options": "User",
+   "read_only": 1
+  },
+  {
+   "description": "Names of the other queries this pipeline reads from, flattened transitively on save. Lets the workbook answer \"what breaks if I delete this\" without walking every pipeline in Python.",
+   "fieldname": "linked_queries",
+   "fieldtype": "JSON",
+   "label": "Linked Queries",
+   "read_only": 1
+  },
+  {
+   "fieldname": "origin_section",
+   "fieldtype": "Section Break",
+   "label": "Origin"
+  },
+  {
+   "description": "The answer this query was saved from, if it came from Ask. The run carries the question, the source (verified or generated), the tier and the model, so a stored artifact can still say what produced it. Frappe refuses to delete a run an artifact cites.",
+   "fieldname": "agent_run",
+   "fieldtype": "Link",
+   "label": "Saved From Answer",
+   "options": "Nakhoda Agent Run",
    "read_only": 1
   }
  ],
@@ -128,5 +172,6 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "title"
+ "title_field": "title",
+ "track_changes": 1
 }

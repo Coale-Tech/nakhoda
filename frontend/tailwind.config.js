@@ -12,10 +12,22 @@ import frappeUIPreset from "frappe-ui/tailwind";
  * only from the top-level config and silently ignores a preset's, so without
  * these globs every class used *inside* a frappe-ui component is purged.
  *
+ * `spacing['7.5']` is the one addition. Insights' sidebar rows and inline
+ * editors are `h-7.5` (30px) - a step Tailwind's default scale does not define
+ * above 3.5, and one the frappe-ui preset's own gap-filling skips because it
+ * only walks whole integers (`tailwind/preset.js`). Without it `h-7.5` compiles
+ * to nothing and every ported row silently collapses to its content height, so
+ * the class has to exist for the geometry to be real rather than approximate.
+ *
  * @type {import('tailwindcss').Config}
  */
 export default {
 	presets: [frappeUIPreset],
+	theme: {
+		extend: {
+			spacing: { 7.5: "1.875rem" },
+		},
+	},
 	content: [
 		"./index.html",
 		"./src/**/*.{vue,js,ts,jsx,tsx}",

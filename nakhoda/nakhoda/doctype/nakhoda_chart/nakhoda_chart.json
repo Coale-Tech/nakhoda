@@ -1,0 +1,120 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "hash",
+ "creation": "2026-08-15 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "workbook",
+  "query",
+  "chart_type",
+  "config",
+  "is_public",
+  "folder",
+  "sort_order"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title"
+  },
+  {
+   "fieldname": "workbook",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Workbook",
+   "options": "Nakhoda Workbook",
+   "reqd": 1
+  },
+  {
+   "description": "The query whose result this chart draws. Nakhoda charts read a query; they do not own a derived pipeline of their own.",
+   "fieldname": "query",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Query",
+   "options": "Nakhoda Query"
+  },
+  {
+   "fieldname": "chart_type",
+   "fieldtype": "Data",
+   "label": "Chart Type"
+  },
+  {
+   "description": "Axis, measure and display options, in the same shape `agent/charts.py` emits and `Chart.vue` renders.",
+   "fieldname": "config",
+   "fieldtype": "JSON",
+   "label": "Config"
+  },
+  {
+   "fieldname": "is_public",
+   "fieldtype": "Check",
+   "label": "Is Public"
+  },
+  {
+   "description": "Flat grouping label, not a Link: folders are per-workbook rows and a chart may sit at the root.",
+   "fieldname": "folder",
+   "fieldtype": "Data",
+   "label": "Folder"
+  },
+  {
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Sort Order"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-15 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nakhoda",
+ "name": "Nakhoda Chart",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
+}

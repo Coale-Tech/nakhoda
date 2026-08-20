@@ -49,7 +49,6 @@ correction UI already uses for a re-run (`14-frontend-design.md`).
 from __future__ import annotations
 
 import json
-import os
 import uuid
 from dataclasses import dataclass, field
 from typing import Any, Literal
@@ -307,14 +306,23 @@ def list_tools(space: str | None, user: str) -> list[dict[str, Any]]:
 
 
 def _asker_model(model_name: str):
-	"""The same `NAKHODA_AGENT_*`-namespaced client `providers.py` uses,
-	wrapped for the Agents SDK - one client construction path, not two."""
+	"""The same DB-first-else-env credentials `providers.credentials()`
+	resolves - one client construction path, not two (this function used to
+	read `os.environ` directly, which meant an admin's `Nakhoda Settings` AI
+	Provider tab silently had no effect here). Also picks up ChatGPT
+	Subscription's extra headers the same way `providers._client()` does -
+	the plugin agent is a second OpenAI client, not a second credential path."""
 	from agents import OpenAIChatCompletionsModel
 	from openai import AsyncOpenAI
 
-	client = AsyncOpenAI(
-		api_key=os.environ["NAKHODA_AGENT_API_KEY"],
-		base_url=os.environ.get("NAKHODA_AGENT_BASE_URL") or None,
+	from nakhoda.agent.providers import credentials, subscription_headers
+
+	api_key, base_url = credentials()
+	headers = subscription_headers()
+	client = (
+		AsyncOpenAI(api_key=api_key, base_url=base_url, default_headers=headers)
+		if headers
+		else AsyncOpenAI(api_key=api_key, base_url=base_url)
 	)
 	return OpenAIChatCompletionsModel(model=model_name, openai_client=client)
 

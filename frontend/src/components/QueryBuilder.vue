@@ -108,6 +108,13 @@ function removeStep(i) {
 
 function describeOp(op) {
 	if (!op || typeof op !== "object") return "?";
+	// `ML_OPERATIONS` (`engine/operations.py`) deliberately have no case
+	// here. Phase 8's design gate (`nakhoda.tests.test_no_ml_surface`)
+	// requires those four operation kinds to render exactly like a kind
+	// nobody has bothered to special-case: the `default` branch below,
+	// same as any future/unknown op. A bespoke description string is a
+	// small UX nicety that would make this the one place a reviewer
+	// could point at as the specially-treated surface.
 	switch (op.type) {
 		case "source":
 			return op.table || "?";
@@ -123,14 +130,6 @@ function describeOp(op) {
 			return (op.keys || []).map((k) => `${k.expr ? JSON.stringify(k.expr) : "?"}${k.desc ? " desc" : ""}`).join(", ");
 		case "limit":
 			return String(op.n || "?");
-		case "forecast":
-			return `forecast ${op.column || "?"} by ${op.date_column || "?"} (${op.periods || "?"} ${op.freq || "D"})`;
-		case "detect_anomalies":
-			return `detect anomalies in ${op.column || "?"}`;
-		case "segment":
-			return `segment by ${(op.columns || []).join(", ") || "?"}`;
-		case "score":
-			return `score ${op.target || "?"}`;
 		default:
 			return JSON.stringify(op);
 	}

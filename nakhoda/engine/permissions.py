@@ -35,7 +35,7 @@ row is, so the child is semi-joined against the permitted parent set on
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from typing import Any, Protocol
 
 import ibis
@@ -202,7 +202,28 @@ class FrappePolicy:
 	def columns(self, doctype: str) -> set[str] | None:
 		from frappe.model import get_permitted_fields
 
-		return set(get_permitted_fields(doctype, user=self.user))
+		if not self.is_child(doctype):
+			return set(get_permitted_fields(doctype, user=self.user))
+
+		# A child DocType carries no permissions of its own, and Frappe says so
+		# by returning *nothing* for one asked about without a `parenttype`
+		# (`model/meta.py:698-699`). `get_permitted_fields` then falls back to
+		# `default_fields` and withholds `parent`/`parenttype` with it
+		# (`model/__init__.py:254-258`), so every line-item table arrived here as
+		# seven framework columns: measured on `jkm` 2026-08-17, `Sales Invoice
+		# Item` 168 -> 7, which is why "revenue by item group" could not be
+		# answered at all and the model was blamed for naming `parent`.
+		#
+		# Ask once per parent, as the row rule already does, and union: a child
+		# row is readable exactly when one of its parent rows is, so its columns
+		# are readable on that same grain. A parent whose rows are denied
+		# contributes neither rows nor columns.
+		fields: set[str] = set()
+		for parent in self.parents(doctype):
+			if not self.rows(parent)[0]:
+				continue
+			fields |= set(get_permitted_fields(doctype, parenttype=parent, user=self.user))
+		return fields
 
 	def rows(self, doctype: str) -> tuple[bool, str | None]:
 		"""Frappe's row filter, with its two absences kept apart.
@@ -253,23 +274,37 @@ class FrappePolicy:
 # --------------------------------------------------------------------------
 
 
+def _projected(table: ir.Table, allowed: set[str] | None) -> ir.Table:
+	"""`table` narrowed to `allowed`, or emptied when it admits nothing that is
+	actually there.
+
+	`None` means unrestricted, which is not the same as an empty set: one is
+	"every column", the other is "no column", and conflating them is how a
+	fail-closed layer starts failing open.
+	"""
+	if allowed is None:
+		return table
+	keep = [c for c in table.columns if c in allowed]
+	if not keep:
+		return empty(table)
+	return table.select(keep) if len(keep) != len(table.columns) else table
+
+
 def permitted(table: ir.Table, doctype: str, policy: Policy, resolve: TableResolver) -> ir.Table:
 	"""`table`, restricted to the rows and columns this policy admits.
 
 	Fails closed: any refusal along the way yields zero rows.
 	"""
-	allowed_columns = policy.columns(doctype)
-	if allowed_columns is None:
-		projected = table
-	else:
-		keep = [c for c in table.columns if c in allowed_columns]
-		if not keep:
-			return empty(table)
-		projected = table.select(keep) if len(keep) != len(table.columns) else table
-
 	if policy.is_child(doctype):
-		return _permitted_child(projected, doctype, policy, resolve)
+		# The parent-row rule joins on `parent`/`parenttype`, so it runs before
+		# the projection: those two are a structural need of the rule, not data
+		# the caller asked for, and a column policy that did not admit them used
+		# to switch the rule off by deleting them - a permission rule failing
+		# open with nothing to see.
+		gated = _permitted_child(table, doctype, policy, resolve)
+		return _projected(gated, policy.columns(doctype))
 
+	projected = _projected(table, policy.columns(doctype))
 	allowed, condition = policy.rows(doctype)
 	if not allowed:
 		return empty(projected)
@@ -327,6 +362,182 @@ def permitted_resolver(resolve: TableResolver, policy: Policy) -> TableResolver:
 	return resolver
 
 
+def _referenced_columns(node: sg.Expression) -> set[str]:
+	"""Every column name Frappe's WHERE fragment mentions, for naming a
+	permission notice ("territory permissions") without guessing."""
+	return {c.name for c in node.find_all(sg.Column)}
+
+
+def excluded(
+	table: ir.Table, doctype: str, policy: Policy, resolve: TableResolver
+) -> tuple[ir.Table, str] | None:
+	"""The structural complement of `permitted()`'s row filter: the rows a
+	policy's row-level condition hides from `table`, plus a human reason
+	naming the restricted field(s) - `"territory permissions"`, not
+	`"restricted"`.
+
+	`None` when there is nothing reportable, by the same fail-toward-less
+	rule `permitted()` follows: a child doctype (its grain is its parent's,
+	not its own - reporting excluded child rows independent of parent
+	visibility would double-count or misattribute them), global read denial
+	(no row-level fragment to name; `permitted()` already shows zero rows,
+	which is its own answer), no restriction at all, or a fragment this
+	module cannot read. A notice that cannot name what it excluded is not a
+	notice this module will show.
+	"""
+	if policy.is_child(doctype):
+		return None
+
+	allowed_columns = policy.columns(doctype)
+	if allowed_columns is None:
+		projected = table
+	else:
+		keep = [c for c in table.columns if c in allowed_columns]
+		if not keep:
+			return None
+		projected = table.select(keep) if len(keep) != len(table.columns) else table
+
+	allowed, condition = policy.rows(doctype)
+	if not allowed or not condition:
+		return None
+	predicate = row_filter(condition, projected, table_name(doctype))
+	if predicate is None:
+		return None
+	try:
+		columns = sorted(_referenced_columns(sqlglot.parse_one(condition, read="mysql")))
+	except Exception:
+		return None
+	if not columns:
+		return None
+
+	return projected.filter(~predicate), " and ".join(columns) + " permissions"
+
+
+def excluded_resolver(resolve: TableResolver, policy: Policy) -> tuple[TableResolver, dict[str, str]]:
+	"""The complement of `permitted_resolver()`: a resolver yielding the rows
+	each table's row filter hides, for re-running an identical pipeline to
+	measure what permissions removed from it. `reasons` fills in as tables
+	are resolved during compilation - a pipeline may touch more than one.
+
+	Raises `PermissionRefusal` from `excluded()` returning `None`, so a
+	caller compiling a pipeline against this resolver gets a clean exception
+	when nothing here is reportable, rather than a resolver that silently
+	returns an unfiltered table.
+	"""
+	reasons: dict[str, str] = {}
+
+	def resolver(name: str) -> ir.Table:
+		doctype = doctype_of(name)
+		found = excluded(resolve(name), doctype, policy, resolve)
+		if found is None:
+			raise PermissionRefusal(f"no reportable exclusion for {name!r}")
+		table, reason = found
+		reasons[name] = reason
+		return table
+
+	return resolver, reasons
+
+
+def filters_applied(doctypes: Iterable[str], policy: Policy) -> list[dict[str, str]]:
+	"""Which of `doctypes` carry a row-level permission filter `permitted()`
+	would apply while compiling a pipeline that touches them - read-only
+	provenance for display, never a step the compiled pipeline itself
+	contains.
+
+	This is deliberately not `excluded()`'s job: `excluded()` computes the
+	*rows* a filter hides, which needs `resolve` and an executed query and
+	fails closed when anything is unreadable. This only names *whether* a
+	filter was structurally injected and which column(s) it names, from the
+	same policy answer `permitted()` itself asks - so it is always available,
+	even when a pipeline never runs (an inspector rendering a cached answer)
+	or `excluded()` refuses. Same fail-toward-less rule: a child doctype, a
+	global denial, no restriction, or an unreadable fragment all contribute
+	nothing rather than a guess.
+	"""
+	applied: list[dict[str, str]] = []
+	for doctype in doctypes:
+		if policy.is_child(doctype):
+			continue
+		allowed, condition = policy.rows(doctype)
+		if not allowed or not condition:
+			continue
+		try:
+			columns = sorted(_referenced_columns(sqlglot.parse_one(condition, read="mysql")))
+		except Exception:
+			continue
+		if not columns:
+			continue
+		applied.append({"table": table_name(doctype), "reason": " and ".join(columns) + " permissions"})
+	return sorted(applied, key=lambda entry: entry["table"])
+
+
 def for_user(resolve: TableResolver, user: str) -> TableResolver:
-	"""The production entry point: a resolver bound to a Frappe user."""
+	"""The production entry point for DocType-backed sources: a resolver bound
+	to a Frappe user."""
 	return permitted_resolver(resolve, FrappePolicy(user))
+
+
+class UnrestrictedPolicy:
+	"""The policy for tables Frappe has no rules about.
+
+	Every answer is the widest one, and each is a statement rather than a
+	shortcut: a foreign schema has no `tabDocPerm` row to read (`rows`), no
+	permitted-field list (`columns`), and no parent/child relationship Frappe
+	models (`is_child`, `parents`). Saying so through the same Protocol the
+	filtered path uses is what keeps external sources inside the one boundary
+	instead of beside it - `permitted()` still wraps their tables, it simply
+	finds nothing to remove, and `pipeline.notice()`/`injected()` report no
+	filter because there is none to report rather than because nobody asked.
+	"""
+
+	def columns(self, doctype: str) -> set[str] | None:
+		return None
+
+	def rows(self, doctype: str) -> tuple[bool, str | None]:
+		return True, None
+
+	def parents(self, child_doctype: str) -> list[str]:
+		return []
+
+	def is_child(self, doctype: str) -> bool:
+		return False
+
+
+class SourceConnector(Protocol):
+	"""What the two entry points below need from a connector, without importing
+	one. `nakhoda.connectors.Connector` satisfies this; the engine stays
+	ignorant of drivers, and a test can hand in anything of the same shape.
+	"""
+
+	@property
+	def describes_doctypes(self) -> bool:
+		"""Whether this backend's tables are the ones `tabDocPerm` describes."""
+
+	def resolve(self, table: str) -> ir.Table:
+		"""The unfiltered table."""
+
+
+def policy_for(connector: SourceConnector, user: str) -> Policy:
+	"""Which access rules describe this source's tables.
+
+	One decision, made by the thing that knows, so that the four execution
+	paths (`api/__init__.py`, `api/templates.py`, `Nakhoda Query`,
+	`Nakhoda Verified Query`) cannot disagree about it. The alternative - each
+	endpoint testing `source_type` before choosing - is the shape that produced
+	Insights issue #919: several places that must agree, and one added later
+	that does not.
+	"""
+	return FrappePolicy(user) if connector.describes_doctypes else UnrestrictedPolicy()
+
+
+def for_connector(connector: SourceConnector, user: str) -> TableResolver:
+	"""The resolver every execution path builds, whatever the source is.
+
+	Still `permitted_resolver`, always: the invariant this module opens with -
+	nothing reachable from execution holds an unwrapped table - would be worth
+	nothing if external sources were the documented exception to it. What
+	changes for them is the policy, not the wrapping, and an unrestricted policy
+	costs nothing at compile time (`permitted()` returns the table untouched
+	when there is no column list and no row fragment).
+	"""
+	return permitted_resolver(connector.resolve, policy_for(connector, user))

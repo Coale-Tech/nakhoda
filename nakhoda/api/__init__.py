@@ -3,8 +3,11 @@
 """The whitelisted surface.
 
 Every endpoint here runs as `frappe.session.user` and gets its tables from
-`permissions.for_user`, so the answer is bounded by what that user could have
-read through the Desk. That is checked, not asserted: `tests/test_api.py`.
+`permissions.for_connector`, so the answer is bounded by what that user could
+have read through the Desk - and, for an external source, by the read permission
+on its `Nakhoda Data Source` row, since a foreign schema has no DocPerm rules to
+apply (`permissions.UnrestrictedPolicy` says so out loud rather than skipping the
+wrap). That is checked, not asserted: `tests/test_api.py`.
 
 `run` accepts a pipeline straight from the caller, which is worth being explicit
 about because it looks like the dangerous kind of endpoint and is not. Two
@@ -32,8 +35,9 @@ from typing import Any
 import frappe
 
 from nakhoda.engine import cache, pipeline
-from nakhoda.engine.operations import OperationError, validate_pipeline
-from nakhoda.engine.permissions import for_user
+from nakhoda.engine.operations import GrammarError, validate_pipeline
+from nakhoda.engine.permissions import for_connector, policy_for
+from nakhoda.nakhoda.doctype.nakhoda_query.nakhoda_query import provider as query_provider
 
 
 @frappe.whitelist()
@@ -69,21 +73,33 @@ def run(operations: Any, data_source: str | None = None, limit: int | None = Non
 	source.check_permission("read")
 	settings = frappe.get_cached_doc("Nakhoda Settings")
 
-	try:
-		validate_pipeline(frappe.parse_json(operations))
-	except OperationError as exc:
-		frappe.throw(str(exc), title=frappe._("Invalid pipeline"))
-
 	connector = source.connector()
-	resolver = for_user(connector.resolve, frappe.session.user)
+	policy = policy_for(connector, str(frappe.session.user))
+	resolver = for_connector(connector, str(frappe.session.user))
 	cap = int(limit or settings.max_rows or 100_000)
-	result = pipeline.run(
-		frappe.parse_json(operations),
-		resolver,
-		connector,
-		cap=cap,
-		ttl=int(settings.cache_ttl or cache.DEFAULT_TTL),
-	)
+	ttl = int(settings.cache_ttl or cache.DEFAULT_TTL)
+	queries = query_provider(source_name)
+
+	# One parse, shared: nothing downstream mutates the operations, and the
+	# payload is the largest thing this endpoint receives.
+	ops = frappe.parse_json(operations)
+	try:
+		validate_pipeline(ops)
+		result = pipeline.run(ops, resolver, connector, cap=cap, ttl=ttl, queries=queries)
+		notice = pipeline.notice(ops, connector.resolve, policy, connector, queries)
+		injected = pipeline.injected(ops, policy, queries)
+	except GrammarError as exc:
+		# Every grammar refusal, wherever it is raised, is a validation error at
+		# this boundary - `manager._try_tier` reads `frappe.ValidationError` as
+		# "the model answered badly" and escalates. Two escaped as 500s before
+		# this guard existed: an `ExpressionError` from validation, and an
+		# `OperationError` from *compilation* (a join colliding with a name only
+		# the real schema knows), which validation cannot see and so cannot
+		# refuse earlier.
+		# `frappe.throw` raises, but it is not typed `NoReturn` - same shape as
+		# `api/data_sources.py:_parsed`.
+		frappe.throw(str(exc), title=frappe._("Invalid pipeline"))
+		raise frappe.ValidationError
 	return {
 		"columns": list(result.frame.columns),
 		"rows": result.frame.to_dict(orient="records"),
@@ -92,6 +108,8 @@ def run(operations: Any, data_source: str | None = None, limit: int | None = Non
 		"execution_time": result.elapsed,
 		"sql": result.sql,
 		"ml_operation": result.ml_operation,
+		"notice": notice,
+		"injected": injected,
 	}
 
 
@@ -104,7 +122,7 @@ def validate(operations: Any) -> dict[str, Any]:
 	"""
 	try:
 		validate_pipeline(frappe.parse_json(operations))
-	except (OperationError, ValueError, TypeError) as exc:
+	except (ValueError, TypeError) as exc:
 		return {"valid": False, "error": str(exc)}
 	return {"valid": True, "error": None}
 
@@ -115,13 +133,20 @@ def default_source() -> str:
 
 	A fresh install can answer a question without being configured first: the
 	site's own database is already a valid source and needs no credentials.
+
+	Deleting the default row is allowed, so "no row carries the flag" is a
+	reachable state. Electing a replacement here without writing the flag back
+	would leave the engine using a source the Data Sources page draws no
+	`Default` badge on, and `list_data_sources`' `is_default desc` sort with
+	nothing to sort by. One invariant instead: if a row exists, one is default.
 	"""
 	existing = frappe.get_all("Nakhoda Data Source", filters={"is_default": 1}, pluck="name", limit=1)
 	if existing:
 		return existing[0]
-	any_source = frappe.get_all("Nakhoda Data Source", pluck="name", limit=1)
-	if any_source:
-		return any_source[0]
+	orphaned = frappe.get_all("Nakhoda Data Source", pluck="name", order_by="creation", limit=1)
+	if orphaned:
+		frappe.db.set_value("Nakhoda Data Source", orphaned[0], "is_default", 1)
+		return orphaned[0]
 
 	if not frappe.has_permission("Nakhoda Data Source", "create"):
 		frappe.throw(frappe._("No data source is configured."), frappe.PermissionError)

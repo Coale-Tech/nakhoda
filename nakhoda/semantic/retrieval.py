@@ -63,6 +63,39 @@ what keeps it safe: the largest tables on a live ERPNext site are `tabVersion`,
 `__global_search` and `tabComment`, and they are never retrieved because they never
 earn lexical evidence in the first place - `rank()` only returns tables that do.
 
+## Reporting
+
+Usage says which tables the business writes to; it cannot say which ones the business
+*measures*. `Sales Invoice` and `Purchase Invoice` both hold tens of thousands of rows
+on this site and are near-indistinguishable by column list, so "what was our revenue"
+splits them by nothing at all. What splits them is that 30 dashboard charts, number
+cards and reports point at one and 21 at the other: a document somebody built a chart
+on is a document questions get asked about. Measured, it is the single largest gain in
+this module - 20/40 to 30/40 - and it is read from three tables the site maintains for
+its own reasons (`profile.reporting_counts`).
+
+A child inherits its document's count, and that is worth five more questions on its
+own. Nobody builds a dashboard on `Sales Invoice Item`, but a chart of revenue by item
+reads exactly that table through its parent: the report is declared against the
+document and the grain lives in the child. Without inheritance the line tables sit
+below their competitors for every question about items sold.
+
+The two priors are averaged rather than added, so the pair still cannot outweigh a
+name match - the cap that made usage safe applies unchanged to what replaced it.
+
+## Emptiness
+
+Two thirds of the columns on this site hold no value in any row. Retrieval pays tokens
+for every column it shows the model, so those columns are budget spent on nothing, and
+they match words the site never uses. Pruning them is worth eight questions and it is
+the difference between clearing the gate and not: `Sales Invoice` costs 2,624 tokens
+instead of 4,351, and the pair it needs fits beside it.
+
+What is empty is a fact about the deployment and expensive to establish - one scan per
+table - so it arrives here as data, like `row_counts`. `semantic/profile.py` owns
+establishing it, including why the exact answer turned out to be cheaper than a
+sampled one.
+
 ## Packing
 
 The remaining failure was structural. For "how many invoice line items are on issued
@@ -91,13 +124,73 @@ Two structural rules sit on top, and neither is a tuning knob:
 
 ## What is not here
 
-Three mechanisms were built, measured and deleted: a weight on link-target words, a
-currency-column bonus gated on a hand-written English money lexicon, and a bonus for
-being joinable to an already-chosen table. Each was plausible, each survived casual
-inspection, and none of them earned a question - deleting all three moved recall
-from 90.0% to 92.5%. `test_each_mechanism_earns_its_place` is what found them, and
-it now guards the six that remain. Nothing in this module reads a list of English
-words; every signal is read off the schema.
+Nine mechanisms were built, measured and deleted. Three went early: a weight on
+link-target words, a currency-column bonus gated on a hand-written English money
+lexicon, and a bonus for being joinable to an already-chosen table. Five more went on
+2026-08-15, when the two priors above were added and everything else plausible was
+tried beside them:
+
+  **Multiplying the priors** instead of averaging them. A table needs rows *and*
+  reports, so a product reads as the stricter claim - and it is, which is the problem:
+  it zeroes any table that has one and not the other, and `Sales Invoice Item` has no
+  charts of its own. 30/40 against 37/40.
+
+  **A flat ledger prior**, and then **a ledger-derived metric vocabulary**: `GL Entry`
+  knows which accounts a business posts revenue to, so its account names should bridge
+  the word "revenue" to the documents that earn it. Neither moved a single question.
+  The vocabulary those accounts actually contribute is `carriag`, `drawback`, `rodtep`
+  - the language of tax treatment, not of the question anybody asks.
+
+  **Two repairs to packing**, both of which looked like bug fixes rather than
+  mechanisms. A child was made to bring one parent instead of every DocType that could
+  parent it (`Item Wise Tax Detail` is reachable from nine documents and so costs
+  12,648 tokens and is never affordable), and a near-duplicate that outscored the
+  incumbent it was suppressed by was allowed to replace it. Each is defensible on
+  paper; measured, both were worth exactly zero questions, so the simpler code stayed.
+
+  **The enum domains.** `one of: Draft, Submitted, Cancelled` is the schema's own
+  controlled vocabulary, which is why enum terms were weighted above column names from
+  the start. Measured, they are mostly workflow states shared by hundreds of tables, so
+  they carry almost no IDF, and wherever an enum value does discriminate the same word
+  is already in the column name beside it. Deleting the bucket left recall at 37/40 and
+  removed 15,556 tokens of wasted budget and six same-kind duplicate pairs from the
+  selections - it was not neutral, it was a cost. Enum domains are still rendered; the
+  model reads them when it writes a filter. They are just not search terms.
+
+  **Reporting titles as vocabulary.** The reporting prior already earns ten questions
+  from the count of charts, cards and reports pointing at a table; their *titles* are
+  free text a person wrote, so they should carry the business words the schema lacks.
+  Measured on this site: 113 documents carry titles, 788 terms - and the three lost
+  questions recovered **zero**, while costing one (37 -> 36). The words are there, on
+  the wrong documents: `revenu` appears in exactly one title set, `GL Entry`'s, and
+  `sold` and `paid` in nobody's. Same shape as the rejected ledger vocabulary: a real
+  signal about accounting, silent about sales.
+
+`test_each_mechanism_earns_its_place` is what found all nine, and it now guards the
+seven that remain - each against the outcome it claims, because recall alone cannot
+price ordering or packing. Pruning has its own mutation test, since no weight can
+switch it off. Nothing in this module reads a list of English words; every signal is
+read off the schema, off the site, or off a curator's own declaration.
+
+## Where this stops
+
+Measured on this site on 2026-08-15: 20/40 with lexical evidence and usage alone,
+30/40 with the reporting prior, 37/40 with pruning and inheritance - 92.5%, against a
+gate of 90%. The three that remained were one shape: all three turn on "revenue" or
+"sold", and the stem `revenu` appears in the vocabulary of **zero** tables on this
+site. `Sales Invoice` never says the word, and nothing derived - not accounts, not
+chart titles - says it either. Four mechanisms were built to derive it and all four
+were deleted.
+
+So it is declared instead: `Nakhoda Semantic Model.synonyms` is the one input here a
+person writes, and with seven documents named it takes retrieval to **40/40**. That
+is the mechanism the earlier ceiling was pointing at, not a limit on the method - and
+`CURATED` is a claim about meaning that a boundary sweep supports rather than a fitted
+number: 0.5 buys 38/40, 0.75 through 3.0 all buy 40/40, so the shipped 3.0 sits four
+times clear of the cliff.
+
+The earlier numbers in this file were measured before this site's data grew; that they
+no longer reproduce is the argument for a site-derived prior rather than against it.
 """
 
 from __future__ import annotations
@@ -105,6 +198,7 @@ from __future__ import annotations
 import math
 import re
 from collections import Counter
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from nakhoda.semantic.model import describe, render
@@ -171,23 +265,21 @@ def estimate_tokens(text: str) -> int:
 	return math.ceil(len(text) / CHARS_PER_TOKEN)
 
 
-def _bucket(note: str) -> str:
-	"""Which kind of evidence a note is, by the shapes `model._notes` emits.
+def _is_prose(note: str) -> bool:
+	"""Whether a note is free text written for a human, rather than schema commitment.
 
-	The split earns its keep: measured, the top hit for "gross revenue excluding any
-	returns" was `Item`, because `no_of_months` is labelled "No of Months (Revenue)".
-	Second was `Customer`, whose `custom_health_score` is *described* as being based
-	on revenue. Neither can answer the question. Enum values and link targets are
-	controlled vocabulary the schema commits to; labels and descriptions are prose
-	written for a human reading a form, and prose is where false friends live.
+	The distinction earns its keep: measured, the top hit for "gross revenue excluding
+	any returns" was `Item`, because `no_of_months` is labelled "No of Months
+	(Revenue)". Second was `Customer`, whose `custom_health_score` is *described* as
+	being based on revenue. Neither can answer the question, and both matched on prose.
+
+	Link targets (`-> Customer`), enum domains (`one of: Draft, ...`) and flags
+	(`required`) are the schema's own vocabulary rather than prose. None of the three is
+	scored: link words and enum values were both measured and deleted (see "What is not
+	here"), and a flag carries no words at all. They stay rendered - the model reads the
+	enum domain when it writes a filter - they just stop being search terms.
 	"""
-	if note.startswith("-> "):
-		return "link"
-	if note.startswith("one of: "):
-		return "enum"
-	if note in ("boolean 0/1", "required"):
-		return "skip"
-	return "prose"
+	return not (note.startswith("-> ") or note.startswith("one of: ") or note in ("boolean 0/1", "required"))
 
 
 def _kind(meta) -> str:
@@ -203,11 +295,24 @@ def _kind(meta) -> str:
 	return "transaction" if meta.get("is_submittable") else "master"
 
 
+def _prune(described: dict, empty: frozenset[str]) -> dict:
+	"""The same description, without the columns this site never fills.
+
+	One definition, called by `Index.__init__` and by `context()`, because a table
+	ranked on a pruned description and rendered from an unpruned one would silently
+	break both the no-drift claim above and the token budget: `select()` fits the
+	pruned cost, and the model would be handed something larger.
+	"""
+	if not empty:
+		return described
+	return described | {"columns": [c for c in described["columns"] if c["name"] not in empty]}
+
+
 @dataclass
 class Table:
 	"""One DocType, as something to rank and something to pay for.
 
-	The term buckets are the kinds of evidence, kept apart because they are worth
+	The term sets are the kinds of evidence, kept apart because they are worth
 	different amounts. Sets, not counts: a column mentioning "invoice" four times is
 	not four times the evidence that this table answers about invoices.
 	"""
@@ -219,9 +324,16 @@ class Table:
 	rows: int = 0
 	parents: tuple[str, ...] = ()
 	name_terms: frozenset[str] = frozenset()
-	enum_terms: frozenset[str] = frozenset()
 	column_terms: frozenset[str] = frozenset()
 	prose_terms: frozenset[str] = frozenset()
+	#: Words a person declared for this document that its schema never says. The one
+	#: kind of evidence here that is not derived, and the only one that reaches the
+	#: three gold questions asking about "revenue" and "sold" - see `CURATED`.
+	curated_terms: frozenset[str] = frozenset()
+	#: Columns this site never fills, dropped from the description this table was
+	#: costed and scored against. Kept so the prompt can render the same artifact -
+	#: `context()` is the only reader.
+	empty: frozenset[str] = frozenset()
 
 	def requires(self) -> tuple[str, ...]:
 		"""What must accompany this table for it to be usable at all."""
@@ -229,7 +341,14 @@ class Table:
 
 	@property
 	def vocabulary(self) -> frozenset[str]:
-		return self.name_terms | self.enum_terms | self.column_terms
+		"""Every term this table can be found by, and the corpus IDF is counted over.
+
+		Curated terms belong in here rather than beside it: a word two same-kind
+		tables were both given is a duplicate like any other (`_redundancy` reads
+		this), and a word every table was given should be worth nothing (`_idf`
+		counts this). Curation that escaped both would be a way to cheat the scorer.
+		"""
+		return self.name_terms | self.column_terms | self.curated_terms
 
 
 class Index:
@@ -237,26 +356,51 @@ class Index:
 
 	Built from anything that answers `.get()` like a Frappe document - a live `Meta`
 	or a DocType JSON off disk - so the gate can run against a fixed corpus and the
-	site can run against itself, through one code path. `row_counts` is data, not a
-	lookup, for the same reason.
+	site can run against itself, through one code path. What the site holds arrives
+	the same way: `row_counts`, `empty_columns`, `reports` and `curated` are data
+	rather than lookups, so nothing in here queries a database and the corpus can be
+	a fixture. The last of them is the only input a person writes.
 	"""
 
 	#: What a matched term is worth, by where it was found. Every weight here is
-	#: load-bearing: `test_each_mechanism_earns_its_place` zeroes each in turn and
-	#: requires recall to fall. Two that were here did not survive that test. A
-	#: weight on link-target names cost a question rather than earning one - the
-	#: column is already named `customer`, so the note only said it twice. A flat
-	#: bonus for holding `base_*` currency columns, gated on a hand-written list of
-	#: English money words, moved nothing at all: on a question about money most of
-	#: the plausible tables hold money, and a bonus almost everyone gets is not a
-	#: discriminator. Deleting it took the last English lexicon out of retrieval.
+	#: load-bearing: `test_each_mechanism_earns_its_place` removes each in turn and
+	#: requires the outcome that weight claims to improve to get worse. Three that were
+	#: here did not survive it. A weight on link-target names cost a question rather
+	#: than earning one - the column is already named `customer`, so the note only said
+	#: it twice. A flat bonus for holding `base_*` currency columns, gated on a
+	#: hand-written list of English money words, moved nothing: on a question about
+	#: money most of the plausible tables hold money, and a bonus almost everyone gets
+	#: is not a discriminator. And enum domains - `one of: Draft, Submitted` - read like
+	#: the schema's own controlled vocabulary, which is why they were weighted above
+	#: column names, but measured they are mostly workflow states that hundreds of
+	#: tables share, so they carry almost no IDF and the words that do discriminate are
+	#: already in the column names beside them. Removing them left recall at 37/40 and
+	#: took 15,556 tokens of wasted budget and six same-kind duplicate pairs out of the
+	#: selections: not neutral, an active cost.
 	NAME = 3.0
-	ENUM = 1.5
 	COLUMN = 1.0
 	PROSE = 0.4
 
+	#: What a word a person declared is worth. Equal to `NAME`, and that is a claim
+	#: about meaning rather than a fitted number: a curator writing "revenue" on
+	#: `Sales Invoice` is asserting exactly what the table's own name asserts, which
+	#: is why it is not weighted above it either. Measured on `jkm` (2026-08-15):
+	#: 37/40 without curation, 40/40 with seven documents described, and 37/40 again
+	#: with this weight zeroed. The cliff is at 0.75 - 0.5 buys one question, 0.75
+	#: buys both - so 3.0 sits four times clear of it rather than balanced on it.
+	#: Nothing derived reaches those three questions: the stem `revenu` appears in no
+	#: table's vocabulary on this site, and two attempts to derive it were deleted
+	#: (see "What is not here").
+	CURATED = 3.0
+
 	#: Capped at `NAME`: usage is worth at most what one matched name word is worth.
 	USAGE = 3.0
+
+	#: What a report pointing at a table is worth, relative to rows in it. Equal, and
+	#: not tuned: the two priors are averaged, so `USAGE` still caps the pair at one
+	#: name term. Zeroing this removes both the reporting prior and the inheritance
+	#: that rides on it, which costs eight questions.
+	REPORTED = 1.0
 
 	#: How hard to discount a candidate for repeating what is already selected. At 1.0
 	#: a perfect duplicate is worth nothing, which is the honest valuation.
@@ -278,9 +422,18 @@ class Index:
 	#: the complement. What the model needs the join graph for is writing the join,
 	#: and it gets it where it belongs: rendered in the table description it reads.
 
-	def __init__(self, metas, row_counts: dict[str, int] | None = None) -> None:
+	def __init__(
+		self,
+		metas,
+		row_counts: dict[str, int] | None = None,
+		empty_columns: dict[str, frozenset[str]] | None = None,
+		reports: dict[str, int] | None = None,
+		curated: dict[str, str] | None = None,
+	) -> None:
 		self.tables: dict[str, Table] = {}
 		counts = row_counts or {}
+		unfilled = empty_columns or {}
+		declared = curated or {}
 		child_of: dict[str, set[str]] = {}
 
 		for meta in metas:
@@ -288,15 +441,20 @@ class Index:
 			if not name or meta.get("issingle"):
 				continue
 
-			described = describe(meta)
+			# Columns this site never fills, dropped before anything is measured, so the
+			# token cost and the vocabulary both describe the table the model will
+			# actually be shown. `name`, `docstatus` and `parent` are framework columns
+			# that no profile lists, which is what keeps the join and filter keys of an
+			# otherwise-unused table intact.
+			empty = unfilled.get(name) or frozenset()
+			described = _prune(describe(meta), empty)
 			columns: set[str] = set()
-			buckets: dict[str, set[str]] = {"enum": set(), "prose": set()}
+			prose: set[str] = set()
 			for column in described["columns"]:
 				columns.update(terms(column["name"]))
 				for note in column["notes"]:
-					kind = _bucket(note)
-					if kind in buckets:
-						buckets[kind].update(terms(note))
+					if _is_prose(note):
+						prose.update(terms(note))
 			self.tables[name] = Table(
 				name=name,
 				tokens=estimate_tokens(render([described])),
@@ -304,9 +462,10 @@ class Index:
 				is_child=bool(meta.get("istable")),
 				rows=max(0, int(counts.get(name, 0))),
 				name_terms=frozenset(terms(name)),
-				enum_terms=frozenset(buckets["enum"]),
 				column_terms=frozenset(columns),
-				prose_terms=frozenset(buckets["prose"]),
+				prose_terms=frozenset(prose),
+				curated_terms=frozenset(terms(declared.get(name, ""))),
+				empty=frozenset(empty),
 			)
 
 			for f in meta.get("fields") or []:
@@ -332,6 +491,16 @@ class Index:
 		busiest = max((t.rows for t in self.tables.values()), default=0)
 		self._usage_scale = math.log1p(busiest) or 1.0
 
+		# A report is declared against a document; the grain it charts lives in the
+		# child. So a line table inherits its parent's count rather than earning its
+		# own, which no line table ever does.
+		self.reports = dict(reports or {})
+		for name, table in self.tables.items():
+			inherited = max((self.reports.get(p, 0) for p in table.parents), default=0)
+			if inherited > self.reports.get(name, 0):
+				self.reports[name] = inherited
+		self._report_scale = math.log1p(max(self.reports.values(), default=0)) or 1.0
+
 	def _idf(self, term: str) -> float:
 		n = len(self.tables)
 		df = self.document_frequency.get(term, 0)
@@ -341,22 +510,46 @@ class Index:
 		"""0 for a table the business has never written to, 1 for its busiest."""
 		return math.log1p(table.rows) / self._usage_scale
 
+	def reported(self, table: Table) -> float:
+		"""0 for a table nobody has built a chart on, 1 for the most reported one."""
+		return math.log1p(self.reports.get(table.name, 0)) / self._report_scale
+
+	def prior(self, table: Table) -> float:
+		"""What this table is worth before a single word is matched.
+
+		Two facts about the deployment, averaged rather than summed so that the pair
+		is still worth at most one matched name term. A table the business writes to
+		and a table the business measures are different claims - `GL Entry` is the
+		busiest ledger on the site and nobody charts it; `Sales Invoice` is both - and
+		averaging is what lets either one carry a table on its own.
+		"""
+		return (self.usage(table) + self.REPORTED * self.reported(table)) / (1 + self.REPORTED)
+
 	def score(self, asked: set[str], table: Table) -> float:
 		"""How much of the question this table can explain, and with what.
 
 		The name is divided by the square root of its own length so that a long table
 		name cannot win on a single shared word: `Sales Invoice` matching two of two
 		beats `Sales Invoice Reference` matching two of three.
+
+		Curated terms are not damped that way: a declaration is not a name, and a
+		curator who writes six words for a document has not thereby made each one
+		worth less. They are IDF-weighted like every other kind of evidence, so a
+		word given to half the site is worth what a word given to half the site is
+		worth - which is what keeps curation from becoming a way to shout.
 		"""
 		named = sum(self._idf(t) for t in asked & table.name_terms)
-		enumed = sum(self._idf(t) for t in asked & table.enum_terms)
 		columned = sum(self._idf(t) for t in asked & table.column_terms)
 		prosed = sum(self._idf(t) for t in asked & table.prose_terms)
+		declared = sum(self._idf(t) for t in asked & table.curated_terms)
 		damping = math.sqrt(len(table.name_terms)) or 1.0
 		lexical = (
-			self.NAME * named / damping + self.ENUM * enumed + self.COLUMN * columned + self.PROSE * prosed
+			self.NAME * named / damping
+			+ self.COLUMN * columned
+			+ self.PROSE * prosed
+			+ self.CURATED * declared
 		)
-		return lexical + self.USAGE * self.usage(table) if lexical else 0.0
+		return lexical + self.USAGE * self.prior(table) if lexical else 0.0
 
 	def rank(self, question: str) -> list[tuple[str, float]]:
 		asked = set(terms(question))
@@ -429,31 +622,63 @@ class Index:
 		return sum(self.tables[n].tokens for n in names if n in self.tables)
 
 
-def row_counts() -> dict[str, int]:
-	"""Approximate row counts for every table on this site, in one query.
+def build_index(doctypes: list[str] | None = None) -> Index:
+	"""The live path: index this site, with what the site is known to hold.
 
-	`information_schema` is an estimate on InnoDB and that is fine: this decides
-	whether a table is used at all, not how used it is.
+	The column profile is read, never built: establishing it is a 68-second scan
+	(`semantic/profile.py`), and this function runs in front of a question. A site that
+	has never built one still answers - eight of the forty gold questions worse, which
+	is why the absence is logged rather than shrugged at. `bench migrate` builds it.
 	"""
 	import frappe
 
-	rows = frappe.db.sql(
-		"""SELECT table_name, table_rows FROM information_schema.tables
-		   WHERE table_schema = DATABASE() AND table_name LIKE 'tab%%'"""
-	)
-	return {name[3:]: int(count or 0) for name, count in rows}
-
-
-def build_index(doctypes: list[str] | None = None) -> Index:
-	"""The live path: index this site."""
-	import frappe
+	from nakhoda.semantic import curation, profile
 
 	names = doctypes or frappe.get_all("DocType", filters={"issingle": 0}, pluck="name")
-	return Index((frappe.get_meta(name) for name in names), row_counts=row_counts())
+	empty = profile.empty_columns()
+	if not empty:
+		frappe.logger("nakhoda").warning(
+			"no column profile on this site: retrieval is running unpruned. "
+			"Build it with `bench --site <site> execute nakhoda.semantic.profile.refresh`."
+		)
+	return Index(
+		(frappe.get_meta(name) for name in names),
+		row_counts=profile.row_counts(),
+		empty_columns=empty,
+		reports=profile.reporting_counts(),
+		curated=curation.synonyms(),
+	)
+
+
+def context(names: Sequence[str], index: Index) -> str:
+	"""The artifact these tables were ranked and costed against, for a model to read.
+
+	The only renderer on the live path. `select()` fits a budget computed from pruned
+	descriptions, so rendering unpruned ones here would hand the model more than it
+	was promised and make `cost()` a lie.
+
+	A curated description replaces the DocType's own, which is what makes
+	`Nakhoda Semantic Model.description` hand-*correctable* rather than decorative.
+	It cannot change which tables are here - selection happened before this call -
+	so the two halves of curation stay separable: `synonyms` move answers, prose
+	explains them.
+	"""
+	import frappe
+
+	from nakhoda.semantic import curation
+
+	authored = curation.descriptions()
+	out = []
+	for name in names:
+		if name not in index.tables:
+			continue
+		described = _prune(describe(frappe.get_meta(name)), index.tables[name].empty)
+		if authored.get(name):
+			described = described | {"description": authored[name]}
+		out.append(described)
+	return render(out)
 
 
 def prompt(question: str, index: Index, budget: int = BUDGET) -> str:
 	"""The semantic layer for one question, inside the budget."""
-	import frappe
-
-	return render([describe(frappe.get_meta(name)) for name in index.select(question, budget)])
+	return context(index.select(question, budget), index)

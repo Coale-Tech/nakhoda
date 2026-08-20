@@ -162,5 +162,126 @@ class GateA(unittest.TestCase):
 		)
 
 
+@unittest.skipUnless(_available(), f"needs the DuckDB fixture at {FIXTURE}: run semantic_bench/build.py")
+class Composition(unittest.TestCase):
+	"""A query reading a query compiles to one statement, and answers the same
+	thing the flattened pipeline does.
+
+	This is the property the workbook needs: an analyst stores a base query and
+	derives from it, and the derived query must not be a second, slower path
+	with its own semantics. `test_operations.py::Composition` covers the grammar
+	and the provenance walk; only real SQL can show the answers agree.
+	"""
+
+	@classmethod
+	def setUpClass(cls) -> None:
+		import ibis
+
+		cls.con = ibis.duckdb.connect(str(FIXTURE), read_only=True)
+
+	def _resolve(self, name):
+		return self.con.table(name)
+
+	def _compile(self, ops, stored=None):
+		from nakhoda.engine.operations import compile_pipeline
+
+		provider = None if stored is None else stored.get
+		return compile_pipeline(ops, self._resolve, provider)
+
+	def test_a_derived_query_answers_what_the_flat_pipeline_answers(self):
+		base = [
+			{"type": "source", "table": "tabSales Invoice"},
+			{"type": "filter", "where": {"fn": "eq", "args": [{"col": "docstatus"}, {"lit": 1}]}},
+		]
+		summarize = {
+			"type": "summarize",
+			"by": [{"name": "territory", "expr": {"col": "territory"}}],
+			"measures": [{"name": "total", "expr": {"fn": "sum", "args": [{"col": "base_grand_total"}]}}],
+		}
+
+		flat = self._compile([*base, summarize]).to_pandas()
+		derived = self._compile(
+			[{"type": "source", "table": {"type": "query", "query_name": "q-base"}}, summarize],
+			{"q-base": base},
+		).to_pandas()
+
+		self.assertEqual(
+			_rows(flat.sort_values(list(flat.columns)).reset_index(drop=True)),
+			_rows(derived.sort_values(list(derived.columns)).reset_index(drop=True)),
+		)
+
+	def test_the_base_is_a_subquery_not_a_second_statement(self):
+		"""One `run` means one statement: the base appears inside the SQL, so the
+		row cap and the cache key cover the composition rather than a fragment
+		of it."""
+		base = [{"type": "source", "table": "tabSales Invoice"}, {"type": "limit", "n": 5}]
+		expression = self._compile(
+			[
+				{"type": "source", "table": {"type": "query", "query_name": "q-base"}},
+				{"type": "summarize", "measures": [{"name": "n", "expr": {"fn": "count", "args": []}}]},
+			],
+			{"q-base": base},
+		)
+		sql = str(self.con.compile(expression))
+		self.assertEqual(sql.upper().count("SELECT") > 1, True, sql)
+		self.assertIn("tabSales Invoice", sql)
+
+	def test_a_join_may_read_a_stored_query(self):
+		base = [
+			{"type": "source", "table": "tabSales Invoice Item"},
+			{
+				"type": "summarize",
+				"by": [{"name": "parent", "expr": {"col": "parent"}}],
+				"measures": [{"name": "lines", "expr": {"fn": "count", "args": []}}],
+			},
+		]
+		frame = self._compile(
+			[
+				{"type": "source", "table": "tabSales Invoice"},
+				{
+					"type": "join",
+					"table": {"type": "query", "query_name": "q-lines"},
+					"left_on": {"col": "name"},
+					"right_on": {"col": "parent"},
+					"select": [{"name": "lines", "expr": {"col": "lines"}}],
+				},
+				{"type": "limit", "n": 10},
+			],
+			{"q-lines": base},
+		).to_pandas()
+		self.assertIn("lines", frame.columns)
+
+	def test_a_cycle_is_refused_rather_than_followed(self):
+		from nakhoda.engine.operations import OperationError
+
+		stored = {
+			"a": [{"type": "source", "table": {"type": "query", "query_name": "b"}}],
+			"b": [{"type": "source", "table": {"type": "query", "query_name": "a"}}],
+		}
+		with self.assertRaises(OperationError) as caught:
+			self._compile([{"type": "source", "table": {"type": "query", "query_name": "a"}}], stored)
+		self.assertIn("reads itself", str(caught.exception))
+
+	def test_a_chain_deeper_than_the_ceiling_is_refused(self):
+		from nakhoda.engine.operations import MAX_QUERY_DEPTH, OperationError
+
+		depth = MAX_QUERY_DEPTH + 3
+		stored = {
+			f"q{i}": [{"type": "source", "table": {"type": "query", "query_name": f"q{i + 1}"}}]
+			for i in range(depth)
+		}
+		stored[f"q{depth}"] = [{"type": "source", "table": "tabSales Invoice"}]
+		with self.assertRaises(OperationError) as caught:
+			self._compile([{"type": "source", "table": {"type": "query", "query_name": "q0"}}], stored)
+		self.assertIn("deep", str(caught.exception))
+
+	def test_a_reference_without_a_provider_is_refused_not_silently_empty(self):
+		from nakhoda.engine.operations import OperationError
+
+		with self.assertRaises(OperationError) as caught:
+			self._compile([{"type": "source", "table": {"type": "query", "query_name": "q"}}])
+		self.assertIn("no query source was supplied", str(caught.exception))
+
+
 if __name__ == "__main__":
 	unittest.main()

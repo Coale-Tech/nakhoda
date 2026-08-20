@@ -20,7 +20,7 @@ const isDown = props.delta.trim().startsWith("-");
 </script>
 
 <template>
-	<div>
+	<div class="metric">
 		<div class="flex items-baseline gap-2.5">
 			<div class="text-7xl-semibold tabular-nums text-ink-gray-9">{{ value }}</div>
 			<div

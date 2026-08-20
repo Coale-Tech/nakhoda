@@ -4,16 +4,21 @@
   "icon": "users",
   "color": "#EC4899",
   "source": null,
+  "source_query": {
+    "title": "Customer Intelligence source",
+    "question": "Customer Intelligence dashboard source",
+    "operations": [{ "type": "source", "table": "tabSales Invoice" }]
+  },
   "metrics": [
     {
       "label": "Active Customers",
-      "expression": "count_distinct(customer)",
+      "expression": "{\"fn\": \"count_distinct\", \"args\": [{\"col\": \"customer\"}]}",
       "format": "Number",
       "direction": "Higher Is Better"
     },
     {
       "label": "Lifetime Value",
-      "expression": "sum(grand_total)",
+      "expression": "{\"fn\": \"sum\", \"args\": [{\"col\": \"grand_total\"}]}",
       "format": "Currency",
       "direction": "Higher Is Better"
     }

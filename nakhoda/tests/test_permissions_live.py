@@ -110,6 +110,35 @@ class LivePermissions(unittest.TestCase):
 		self.assertIn("Sales Invoice", policy.parents("Sales Invoice Item"))
 		self.assertFalse(policy.is_child("Sales Invoice"))
 
+	def test_a_child_table_admits_more_than_the_framework_columns(self):
+		"""The regression that shipped: 168 columns arrived as 7.
+
+		Frappe returns *no* permitted fields for a child DocType asked about
+		without a `parenttype` (`model/meta.py:698-699`) and then withholds
+		`parent`/`parenttype` with them (`model/__init__.py:254-258`). Projected
+		with that answer, every line-item table lost both its business columns and
+		the keys the parent-row rule joins on, so a question about what was sold
+		could not be compiled at all - it reached the browser as the model naming
+		a column "not in scope".
+
+		Naming `item_code` would tie this to ERPNext's field list. What must hold
+		is structural: a child admits something the framework did not put there,
+		and it admits the two keys the grain rule needs.
+		"""
+		if "Sales Invoice Item" not in self.doctypes:
+			self.skipTest("no Sales Invoice Item on this site")
+		from frappe.model import default_fields, optional_fields
+
+		columns = permissions.FrappePolicy("Administrator").columns("Sales Invoice Item")
+		assert columns is not None, "FrappePolicy always answers with a set"
+		framework = set(default_fields) | set(optional_fields) | {"parent", "parentfield", "parenttype"}
+		self.assertTrue(
+			columns - framework,
+			"a child admitting only framework columns cannot answer a question about line items",
+		)
+		for key in ("parent", "parenttype"):
+			self.assertIn(key, columns, "the parent-row rule joins on this")
+
 	def test_a_denied_user_reads_nothing_through_the_engine(self):
 		"""End to end, on the site's own database, through the real compiler.
 
@@ -117,12 +146,7 @@ class LivePermissions(unittest.TestCase):
 		against MariaDB, which is the backend that actually serves a user.
 		"""
 		denied = next(
-			(
-				(u, d)
-				for d in self.doctypes
-				for u in self.users
-				if not permissions.FrappePolicy(u).rows(d)[0]
-			),
+			((u, d) for d in self.doctypes for u in self.users if not permissions.FrappePolicy(u).rows(d)[0]),
 			None,
 		)
 		if denied is None:

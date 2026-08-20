@@ -25,7 +25,7 @@ defineProps({
 	>
 		<span class="lucide-lock size-3.5 flex-none" aria-hidden="true" />
 		<span>
-			<b>{{ excludedCount }}</b> record{{ excludedCount === 1 ? "" : "s" }} ({{ excludedAmount }}) are outside your
+			<b>{{ excludedCount }}</b> record{{ excludedCount === 1 ? "" : "s" }}<template v-if="excludedAmount"> ({{ excludedAmount }})</template> are outside your
 			{{ reason }} and are not in this total.
 		</span>
 	</div>

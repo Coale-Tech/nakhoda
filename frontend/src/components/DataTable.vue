@@ -22,7 +22,14 @@ import { List, ListCell, ListHeader, ListHeaderCell, ListRow, ListRows } from "f
 const props = defineProps({
 	columns: { type: Array, required: true }, // [{ label, align? }]
 	rows: { type: Array, required: true }, // [{ cells: [{ text, muted? }] }]
+	// Rows the result had, when the caller rendered only a slice of them
+	// (`agent.js:PREVIEW_ROWS`). Omitted means `rows` is the whole result.
+	total: { type: Number, default: undefined },
 });
+
+// Stated rather than silent: a table that shows 100 of 3,730 rows without
+// saying so is a wrong answer, not a shortened one.
+const hiddenCount = computed(() => (props.total ?? props.rows.length) - props.rows.length);
 
 // Equal, shrinkable tracks: column count is whatever the query returned, so
 // there is no per-column width to declare honestly.
@@ -58,5 +65,11 @@ const tracks = computed(() => props.columns.map(() => "minmax(0,1fr)"));
 				</template>
 			</ListRows>
 		</List>
+		<p
+			v-if="hiddenCount > 0"
+			class="border-t border-outline-gray-2 bg-surface-gray-1 px-3 py-1.5 text-xs text-ink-gray-6"
+		>
+			Showing the first {{ rows.length }} of {{ total }} rows.
+		</p>
 	</div>
 </template>

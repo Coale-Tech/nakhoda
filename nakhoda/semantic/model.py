@@ -212,6 +212,12 @@ def describe(meta) -> dict:
 		fieldname, fieldtype = field.get("fieldname"), field.get("fieldtype")
 		if not fieldname or fieldname in seen:
 			continue
+		if field.get("is_virtual"):
+			# Computed on read, never written - `SELECT` cannot name it. India
+			# Compliance ships several (`Purchase Receipt.gst_breakup_table`), and a
+			# fieldtype in HAS_COLUMN does not save it: `is_virtual` overrides the
+			# type and Frappe creates no column for it at all.
+			continue
 		if fieldtype not in HAS_COLUMN:
 			continue
 		seen.add(fieldname)

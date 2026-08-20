@@ -1,9 +1,20 @@
 <script setup>
 import { onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { Button, LoadingIndicator } from "frappe-ui";
+import { Breadcrumbs, Button, LoadingIndicator } from "frappe-ui";
 import { List, ListHeader, ListHeaderCell, ListRow, ListCell, ListRows } from "frappe-ui/list";
 import { useQueryStore } from "../stores/query.js";
+
+/**
+ * Unfiled queries: the ones no workbook holds.
+ *
+ * Insights has no page like this because `insights_query_v3.workbook` is
+ * `reqd` - there, every query is inside a workbook and the workbook sidebar is
+ * the only list needed. `Nakhoda Query.workbook` is optional, so the builder
+ * can save a query that belongs to no container, and those rows would
+ * otherwise be unreachable. `api/query.py:list_queries` filters to them, so
+ * this page is not a second copy of every workbook's Queries section.
+ */
 
 const router = useRouter();
 const store = useQueryStore();
@@ -22,22 +33,21 @@ function openQuery(name) {
 </script>
 
 <template>
-	<div class="flex h-full flex-col p-5">
-		<div class="mb-4 flex items-center justify-between">
-			<h2 class="text-lg-semibold text-ink-gray-9">Queries</h2>
-			<Button variant="solid" theme="gray" icon-left="lucide-plus" label="New Query" @click="createQuery" />
-		</div>
-		<p class="text-p-base mb-4 text-ink-gray-6">
-			Saved queries are Operation JSON pipelines compiled to ibis/DuckDB SQL. Open a generated query from
-			Ask in the builder to edit and save it.
-		</p>
+	<header
+		class="flex h-12 shrink-0 items-center justify-between border-b border-outline-gray-2 py-2.5 pl-5 pr-2"
+	>
+		<Breadcrumbs :items="[{ label: 'Queries', route: { name: 'Queries' } }]" />
+		<Button variant="solid" theme="gray" icon-left="lucide-plus" label="New Query" @click="createQuery" />
+	</header>
+
+	<div class="flex min-h-0 flex-1 flex-col gap-3 overflow-auto px-5 py-3">
 		<div v-if="store.loading" class="flex flex-1 items-center justify-center">
 			<LoadingIndicator class="size-6" />
 		</div>
 		<div v-else-if="store.error" class="rounded-sm border border-outline-red-2 bg-surface-red-1 p-4 text-sm text-ink-red-6">
 			Could not load queries.
 		</div>
-		<List v-else-if="store.queries.length" class="flex-1" :columns="['auto', 'auto', 'auto']">
+		<List v-else-if="store.queries.length" class="min-h-0 flex-1" :columns="['auto', 'auto', 'auto']">
 			<ListHeader>
 				<ListHeaderCell v-for="col in ['Title', 'Data Source', 'Modified']" :key="col">{{ col }}</ListHeaderCell>
 			</ListHeader>
@@ -52,7 +62,10 @@ function openQuery(name) {
 			</ListRows>
 		</List>
 		<div v-else class="mt-10 rounded-lg border border-outline-gray-2 bg-surface-elevation-1 p-10 text-center">
-			<p class="text-p-base text-ink-gray-6">No queries yet.</p>
+			<p class="text-p-base text-ink-gray-6">
+				No unfiled queries. A query saved into a workbook is listed in that workbook, not here -
+				this page holds the ones that belong to no container, saved straight from the builder.
+			</p>
 		</div>
 	</div>
 </template>

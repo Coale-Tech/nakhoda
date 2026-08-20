@@ -32,8 +32,9 @@ from frappe.model.document import Document
 from frappe.utils import now_datetime
 
 from nakhoda.engine import cache, pipeline
-from nakhoda.engine.operations import OperationError, validate_pipeline
-from nakhoda.engine.permissions import for_user
+from nakhoda.engine.operations import GrammarError, validate_pipeline
+from nakhoda.engine.permissions import for_connector, policy_for
+from nakhoda.nakhoda.doctype.nakhoda_query.nakhoda_query import provider as query_provider
 
 
 class NakhodaVerifiedQuery(Document):
@@ -62,7 +63,7 @@ class NakhodaVerifiedQuery(Document):
 	def validate(self) -> None:
 		try:
 			validate_pipeline(frappe.parse_json(self.operations))
-		except OperationError as exc:
+		except GrammarError as exc:
 			frappe.throw(str(exc), title=frappe._("Invalid pipeline"))
 		except (ValueError, TypeError) as exc:
 			frappe.throw(frappe._("Operations must be valid JSON: {0}").format(exc))
@@ -90,15 +91,23 @@ class NakhodaVerifiedQuery(Document):
 		source = frappe.get_cached_doc("Nakhoda Data Source", self.data_source)
 		connector = source.connector()
 
-		resolver = for_user(connector.resolve, frappe.session.user)
+		resolver = for_connector(connector, str(frappe.session.user))
 		cap = int(limit or settings.max_rows or 100_000)
+		ttl = int(settings.cache_ttl or cache.DEFAULT_TTL)
+		queries = query_provider(str(self.data_source))
 		result = pipeline.run(
 			frappe.parse_json(self.operations),
 			resolver,
 			connector,
 			cap=cap,
-			ttl=int(settings.cache_ttl or cache.DEFAULT_TTL),
+			ttl=ttl,
+			queries=queries,
 		)
+		policy = policy_for(connector, str(frappe.session.user))
+		notice = pipeline.notice(
+			frappe.parse_json(self.operations), connector.resolve, policy, connector, queries
+		)
+		injected = pipeline.injected(frappe.parse_json(self.operations), policy, queries)
 
 		self._record(result.cache_key, len(result.frame), result.elapsed)
 		return {
@@ -113,6 +122,8 @@ class NakhodaVerifiedQuery(Document):
 			"question": self.question,
 			"verified_by": self.verified_by,
 			"verified_on": self.verified_on,
+			"notice": notice,
+			"injected": injected,
 		}
 
 	def _record(self, key: str, rows: int, elapsed: float) -> None:

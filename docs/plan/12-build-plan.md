@@ -58,7 +58,8 @@ to study before writing Nakhoda's own.
 dominates by ~20:1. Do not shop for a faster engine; ship the boring one.
 
 **Rebuild (~4–5k LOC backend, ~8–10k frontend for a defensible v1):** operation compiler,
-site-DB connector, DuckDB warehouse sync, semantic-model generator, agent loop, result
+connectors (site DB, DuckDB warehouse, and external MariaDB / PostgreSQL /
+ClickHouse / DuckDB file), DuckDB warehouse sync, semantic-model generator, agent loop, result
 cache, inspector UI, chart renderers.
 
 **Refuse — the three that make this worth doing:**
@@ -84,7 +85,7 @@ apps/nakhoda/
     semantic/          # generator over frappe.get_meta(); retrieval/pruning
     engine/            # operation grammar → ibis → SQL; permission filter injection
     warehouse/         # DuckDB sync, incremental import
-    connectors/        # site_db first; postgres/mysql after
+    connectors/        # site_db, DuckDB warehouse, and BACKENDS: MariaDB/PostgreSQL/ClickHouse/DuckDB file
     agent/             # Raven-pattern manager, tools, transcript
     doctype/           # see §4
     api/               # whitelisted endpoints
@@ -122,28 +123,38 @@ bench --site <site> install-app nakhoda
 
 ## 4. Data model
 
-18 DocTypes. Introduced by the phase that needs them. The table previously stopped at
-Phase 5 and undercounted at "~13"; phases 6, 9 and 10 each need storage.
+**19 on disk, of 24 named here.** Introduced by the phase that needs them.
+`✅` is verified against `nakhoda/nakhoda/doctype/` (2026-08-15); a blank is
+planned-but-unbuilt and is therefore remaining work, not a documentation gap.
+Six rows below were added by phases that shipped storage the original table
+never anticipated.
 
-| DocType | Phase | Purpose |
-|---|---|---|
-| `Nakhoda Settings` | 0 | Single. Model provider, token budget, row caps, permission defaults |
-| `Nakhoda Data Source` | 0 | Connection config; site DB is the default source |
-| `Nakhoda Table` | 0 | Synced table metadata + warehouse state |
-| `Nakhoda Query` | 0 | Operations JSON + cache key. The unit of execution |
-| `Nakhoda Semantic Model` | 1 | Generated from `get_meta()`, hand-correctable. Versioned |
-| `Nakhoda Semantic Field` | 1 | Child. Label, type, enum domain, join target, grain, synonyms |
-| `Nakhoda Metric` | 1 | Certified measure: definition, owner, grain. **Hand-authored — the metadata cannot supply this** |
-| `Nakhoda Benchmark Set` | 2 | Question + gold result |
-| `Nakhoda Benchmark Question` | 2 | Child |
-| `Nakhoda Verified Query` | 3 | Trusted asset; preferred over generation, labelled in output |
-| `Nakhoda Space` | 4 | Agent scope: sources + instructions + verified queries + MCP servers |
-| `Nakhoda Agent Run` | 4 | Audit: prompt, tools called, operations, SQL, rows, tokens, cost |
-| `Nakhoda Workbook` | 5 | Artifact container. **Must record the semantic-model version and prompt that produced it** |
-| `Nakhoda Chart` / `Dashboard` | 5 | Presentation |
-| `Nakhoda MCP Server` | 6 | Child of Space. Transport, URL/command, `cacheScope`, egress policy — Gate B fails without a per-server cache-scope field |
-| `Nakhoda Intelligence Template` | 9 | Domain dashboard as a declarative record — `metrics`/`panels`/`skill`/`ml`, plus `from_template`/`imported_version`/`imported_checksum` for update-in-place. Six shipped domains are six folders; a seventh is one more and zero Python |
-| `Nakhoda Dashboard Version` | 10 | Applied patch + prior `items[]`. Revert is restoring a row, not replaying an inverse patch |
+| DocType | Phase | On disk | Purpose |
+|---|---|---|---|
+| `Nakhoda Settings` | 0 | ✅ | Single. AI provider + tier models, row caps, data-store caps, permission defaults. (`token_budget` was planned and dropped — tiers are named, models are data) |
+| `Nakhoda Data Source` | 0 | ✅ | `Site Database` / `DuckDB Warehouse`, both backend-created on demand, plus `External Database` rows a user connects from the New Source dialog (host/port/credentials in the row, password in Frappe's password store). Exactly one is default whenever a row exists |
+| `Nakhoda Table` | 0 | ✅ | Per-table warehouse state: `sync_state`, `stored_in_warehouse`, `row_count`, `sync_error`, and a per-table `row_limit` override |
+| `Nakhoda Table Import Log` | 0 | ✅ | One row per attempted import — the audit trail behind the Data Store page's state badge, and the open-log guard that makes a double-click a refusal instead of a second writer |
+| `Nakhoda Query` | 0 | ✅ | Operations JSON + cache key. The unit of execution. `agent_run` records the answer a saved query came from — **the prompt half of the provenance requirement below; the semantic-model half is now unblocked but unwired, see §8** |
+| `Nakhoda Semantic Model` | 1 | ✅ | One row per modelled DocType. Generated half — grain, column types, row and reporting counts — derived by `semantic/curation.py` from `get_meta()` plus the nightly profile; written half — description, document synonyms, per-column synonyms — typed by a person and never overwritten. `curated` is derived from a checksum over the generated prose, so a row cannot claim to be hand-written while matching what the generator would have said |
+| `Nakhoda Semantic Field` | 1 | ✅ | Child. Label, type, enum domain, join target, grain, synonyms. Rebuilt on every sync, so the parent's `validate` re-reads these rows rather than trusting a stale client |
+| `Nakhoda Metric` | 1 | ✅ | Certified measure: definition, aggregate, filters, grain, steward, `certified`. **Hand-authored — the metadata cannot supply this.** Counted by the coverage strip; not yet read by retrieval |
+| `Nakhoda Benchmark Set` | 2 | | Question + gold result |
+| `Nakhoda Benchmark Question` | 2 | | Child |
+| `Nakhoda Verified Query` | 3 | ✅ | Trusted asset; preferred over generation, labelled in output |
+| `Nakhoda Space` | 4 | ✅ | Agent scope: sources + instructions + verified queries + MCP servers |
+| `Nakhoda Agent Run` | 4 | ✅ | Audit: prompt, tools called, operations, SQL, rows, tokens, cost |
+| `Nakhoda Workbook` | 5 | ✅ | Artifact container. Owns its queries, charts, dashboards and folders by `Link`, so Frappe enforces the tree — deleting one deletes them, and a copy remaps every reference so it reads its own rows. Restore lands under a new autoincrement id. **Origin lives on the query it contains (`Nakhoda Query.agent_run`), not here: a workbook can hold answers from many questions, so one prompt field on the container would name whichever answer arrived last** |
+| `Nakhoda Chart` | 5 | ✅ | Presentation. One chart reads one query, and never one in another workbook (`validate_query_workbook`) |
+| `Nakhoda Dashboard` | 5 | ✅ | Presentation. Tiles name charts inside `items` JSON; a copy remaps those ids |
+| `Nakhoda Dashboard Chart` | 5 | ✅ | Child of Dashboard. A tile's placement, so no chart id lives only in free JSON |
+| `Nakhoda Folder` | 5 | ✅ | A grouping label scoped to one workbook, not a Link an item can carry out of it |
+| `Nakhoda MCP Server` | 6 | ✅ | Child of Space. Transport, URL/command, `cacheScope`, egress policy — Gate B fails without a per-server cache-scope field |
+| `Nakhoda Notebook Run` | 8 | ✅ | One recorded notebook execution |
+| `Nakhoda Intelligence Template` | 9 | ✅ | Domain dashboard as a declarative record — `metrics`/`panels`/`skill`/`ml`, plus `from_template`/`imported_version`/`imported_checksum` for update-in-place. Six shipped domains are six folders; a seventh is one more and zero Python |
+| `Nakhoda Intelligence Metric` | 9 | ✅ | Child of Template. One declared measure |
+| `Nakhoda Intelligence ML Operation` | 9 | ✅ | Child of Template. One declared ML step |
+| `Nakhoda Dashboard Version` | 10 | ✅ | Applied patch + prior `items[]`. Revert is restoring a row, not replaying an inverse patch |
 
 ---
 
@@ -230,11 +241,14 @@ here, not later.**
 > while staying under a fixed per-question token budget. This gate exists because §7
 > risk 5 locates the residual risk here.
 
-**Measured, 2026-08-12.** Gate A holds (`test_semantic.py`, byte-equal against the
-artifact). Gate B holds at **37/40 = 92.5%** under 7,843 tokens on `gardatest.local`
-— 1,011 non-single DocTypes, 187,242 tokens rendered whole, a 24x cut. The scale
-figure above understated this bench: 1,011 DocTypes, not 529, because a live site
-carries installed apps the stock count does not.
+**Measured, 2026-08-12; remeasured on `jkm`, 2026-08-15.** Gate A holds
+(`test_semantic.py`, byte-equal against the artifact). Gate B holds at **37/40 =
+92.5%** under 7,843 tokens — 1,101 non-single DocTypes, 187,242 tokens rendered whole,
+a 24x cut. The scale figure above understated this bench: 1,101 DocTypes, not 529,
+because a live site carries installed apps the stock count does not. The same code
+scored 37/40 on `gardatest.local` and 20/40 here until two site-derived inputs were
+added; the paragraphs below are the record of that, and it is the strongest evidence in
+this plan that a retrieval number measured on one site is not a property of the app.
 
 Two line items above did not survive measurement, and the plan is wrong rather than
 the code. **The Link-derived join graph does not belong in ranking.** Scoring a
@@ -256,17 +270,71 @@ to; labels and descriptions are prose, and prose is where the false friends live
 `Item.no_of_months` is labelled "No of Months (Revenue)", which made `Item` the top
 hit for every revenue question until the two were scored apart.
 
-The largest single contributor is the usage prior — a table with no rows cannot
-answer a question about what the business did. Removing it costs 18 of 40 questions,
-more than every lexical weight combined. That is a fact about the deployment rather
-than the benchmark, and it is the part of this design least likely to transfer to a
-paper and most likely to matter in production.
+The largest single contributor is no longer the usage prior. **Remeasured on `jkm`,
+2026-08-15, the shipped configuration scored 20/40** — the gate held on
+`gardatest.local` and stopped holding here, because this site has real ERPNext data
+in both `Sales Invoice` and `Purchase Invoice` where the other had one of the two.
+Row counts cannot separate two documents a business genuinely both uses.
 
-`test_retrieval.py::test_each_mechanism_earns_its_place` zeroes each weight in turn
-and fails if recall survives. It has already deleted three mechanisms — the join
-graph bonus, a link-word weight, and a currency bonus gated on a hand-written
-English money lexicon — and deleting all three moved recall from 90.0% to 92.5%.
-Nothing in retrieval now reads a list of English words.
+What separates them is what the business already *measures*: 30 dashboard charts,
+cards and reports point at `Sales Invoice` and 21 at `Purchase Invoice`. That prior
+took recall 20/40 → 30/40, and letting a line table inherit its document's count
+(nobody charts `Sales Invoice Item`; every revenue-by-item chart reads it) took it to
+28/40 alone and 32/40 with pruning. Dropping the columns this site never fills —
+8,535 of 12,893, and 670 of 1,101 tables entirely empty — closed the rest: **37/40 =
+92.5%**, gate 90%. Both inputs are site-derived, arrive as data, and are owned by the
+new `semantic/profile.py`; the scan behind the second is 68s, so it is a `bench
+migrate` + daily artifact, not something a question waits on.
+
+Four more mechanisms were built and deleted in that pass: multiplying the two priors
+instead of averaging them (30/40 — it zeroes a table that has rows but no charts), a
+flat ledger prior and a GL-account-derived metric vocabulary (both exactly zero: the
+words those accounts carry are `carriag`, `drawback`, `rodtep`), and two repairs to
+packing that read like bug fixes and moved nothing. The three questions still lost all
+turn on "revenue"/"sold", and the stem `revenu` appears in **zero** table vocabularies
+on this site — that is the generated-prose gap `Nakhoda Semantic Model` (Phase 1's
+other half) exists to fill, not a scorer defect.
+
+`test_retrieval.py::test_each_mechanism_earns_its_place` zeroes each weight in turn and
+fails if recall survives; `test_pruning_earns_its_place` does the same for the input no
+weight can switch off. Seven mechanisms have now been deleted by those two tests.
+Nothing in retrieval reads a list of English words.
+
+**Phase 1's other half shipped, 2026-08-16: the gap closes, and by hand.** Three
+DocTypes (`Nakhoda Semantic Model`, its `Nakhoda Semantic Field` child, `Nakhoda
+Metric`), a `semantic/curation.py` that upserts the generated half from the live site
+and never overwrites the written half, a whitelisted API, and a Settings tab. Seeding
+this site is **439 documents and 8,369 columns in 31s** — `{created: 408, updated: 20,
+preserved: 0}` on the first pass; the same pass re-run through the real worker took
+**33.9s and preserved all 428**, because nothing in the schema had changed. Coverage on
+a fresh install: 439 used, 428 modelled, 0 written by hand.
+
+The measurement that matters is whether a person's words move retrieval, and by how
+much. Seven documents were curated the way a curator would - generic business words per
+document, not shaped to a question (`Sales Invoice`: "revenue turnover sold billing
+topline takings") - and `Index.CURATED` swept through the shipped path, with the gate's
+own `measure()`:
+
+| `CURATED` | recall | still lost |
+|---|---|---|
+| no curated rows | 37/40 | q20, q29, q30 |
+| 0.0 (rows present, weight off) | 37/40 | q20, q29, q30 |
+| 0.25 | 38/40 | q20, q29 |
+| 0.5 | 38/40 | q20, q29 |
+| **0.75** | **40/40** | — |
+| 1.0 / 2.0 / 3.0 / 6.0 | 40/40 | — |
+
+Two things are load-bearing in that table. The `0.0` row is the control: the words are
+in the database and recall does not move, so it is the weight that fires, not the
+presence of text. And the boundary is **0.75**, while the shipped weight is **3.0**
+(equal to `NAME`) - 4x clear of the cliff rather than fitted to its edge, which is the
+difference between a claim about meaning and a tuned constant. **The three questions the
+scorer could not reach are now answered by the one input no statistic over this schema
+can produce.** `test_retrieval.py`'s `Curation` class holds all three claims: that
+curation clears the gate a derived layer left at 37/40, that zeroing `CURATED` while
+keeping the words loses them again (so the weight has a job), and that a quarter of the
+shipped weight still holds 40/40 (so the weight is clear of the cliff, not fitted to
+it).
 
 ### Phase 2 — Eval harness
 `Nakhoda Benchmark Set`; re-implement §6.0's paired protocol in-app; wire to CI.
@@ -708,6 +776,7 @@ repeated eyeballing. A gate a careless reviewer can nod through is not a gate.
 | 5 | — | provenance rendered before execution: assumptions, rows removed, realised SQL | e2e |
 | 5 | — | charts do not lie: bar height ∝ value within 2%, 0px axis-label drift | CI (DOM) |
 | 5 | — | no two origin badges share a `background`/`color`/`box-shadow` triple; 0 WCAG AA text failures | CI (DOM) |
+| 5 | — | no list endpoint shows a row its caller cannot open: a second user's workbooks and queries are absent from `get_workbooks` and `list_queries` (`frappe.get_all` skips permissions by contract, so the read must be `get_list`) | CI |
 | 6 | A | plugin runs under the *asker's* permissions — re-run against a local model with no egress | e2e |
 | 6 | B | user A's tool catalog never appears for user B (`cacheScope` honoured or cache off) | e2e |
 | 6 | C | a plugin cannot render a prompt indistinguishable from Nakhoda's own | CI (DOM) |
@@ -814,6 +883,53 @@ Hold these at every phase; they are what the report's evidence actually supports
    `frappe.utils` date helpers alphabetically collide, which is the one false positive
    the first draft produced. Architecture, grammars and failure modes are free to
    travel; lines are not.
+12. **Permission-filtered rows never leave the permission system, and never render
+   unbounded.** Two halves of one rule, both found the hard way on 2026-08-16 when a
+   workbook first got an Ask panel (`14-frontend-design.md` §11). *Never persisted*:
+   a turn holds result rows already filtered by the asker's permissions, so the
+   conversation store is memory-only (`stores/ask.js`) — `localStorage` is readable by
+   every script on the origin and survives logout, which would park those rows outside
+   the system that filtered them. Preferences persist; answers do not. *Never
+   unbounded*: the answer table renders at most `agent.js:PREVIEW_ROWS = 100` rows and
+   states the slice. A question the pipeline answers with a bare `source` operation
+   really does return the whole table — 3,730 rows × 264 columns on `jkm`, 984,720
+   cells — and rendering it wedged the browser past recovery. The frontend must
+   survive whatever shape the pipeline emits, so the bound belongs at the shaping
+   boundary rather than in the pipeline's good intentions.
+13. **A refused answer is shown to the model that produced it, once.** `providers.complete`
+   samples at **temperature 0** (`agent/providers.py:472-493`) so the deterministic
+   sampler cannot be talked out of a wrong pipeline by repetition: the old ladder's
+   response to a refusal — the same prompt, one rung up — spent two identical
+   59-second calls to `nvidia/nemotron-3-ultra-550b-a55b` on one identical refusal,
+   measured on `jkm` 2026-08-16, and a site that leaves `ai_model_fallback` blank has
+   one id standing for both rungs anyway. Every refusal this engine raises names the
+   offending node (`engine/operations.py`, `engine/expression.py`), and `api.validate`'s
+   docstring already named "a model correcting itself" as its consumer, so the second
+   call carries the rejected answer and the reason (`bench/driver.py:repair`). One
+   repair per model, echo capped at `REPAIR_ECHO = 4000` chars: a model that cannot use
+   a precise correction will not use a third prompt either, so the ladder escalates
+   instead of looping — §4's "escalate on a validation failure" still holds, it just
+   happens after the cheap model has had its correction. Rungs offering no untried id
+   are **skipped**, which is neither an escalation nor an outage: the row records
+   neither. The §Phase 2 benchmark numbers are unaffected — `bench/models.py` drives
+   `driver.prompt` directly and never enters the manager, so 112/120 still measures
+   single-shot generation.
+14. **A child DocType's permitted columns are only knowable through its parent.**
+   `frappe.model.get_permitted_fields("Sales Invoice Item")` with no `parenttype`
+   returns **7 columns** — `creation`, `docstatus`, `idx`, `modified`, `modified_by`,
+   `name`, `owner` — because a child carries no permissions of its own and Frappe
+   answers a question about one asked in isolation with the framework's own fields.
+   The projection then handed the compiler a table without `item_code`, so every
+   line-item question failed at the join with `no column 'parent' in scope.
+   Available: ['creation', 'docstatus', ...]` — the seven columns, quoted back as
+   though the table were empty (`jkm`, 2026-08-17, run `7u3g3n2ss6`). `FrappePolicy.columns`
+   now unions the fields permitted under **every** parent `policy.parents()` names
+   and keeps `parent`/`parenttype`, which the grain rule joins on. Measured after:
+   `tabSales Invoice Item` 168 of 168, `tabSales Taxes and Charges` 32 of 33.
+   The failure was silent in the worst direction — an entitled user reading nothing
+   looks identical to a restricted one — so `test_permissions.py` drives the
+   projection-drops-the-join-keys case offline and `test_permissions_live.py` fails
+   on a site the moment a child answers with framework columns alone.
 
 ---
 
@@ -894,6 +1010,26 @@ Things this research cannot settle for you:
    `get_meta()` semantic layer to Insights for ~1,500 LOC on top of the 44,000 it
    already has. The window is real (zero AI code in framework v16 or Insights v3) but it
    is a window.
+3. **What "the semantic-model version that produced this" means, now that Phase 1's
+   written half is on disk.** §4 requires a saved artifact to record it, and until
+   2026-08-16 the honest answer was "there is nothing to cite". There is now, but not one
+   number: `Nakhoda Semantic Model.source_checksum` is per document, and a pipeline reads
+   a *set* of documents, so the citable thing is a checksum over the rows the selection
+   actually used. That is a real choice with a cost — recording it means a saved query
+   pins the vocabulary it was written against, and a later curation makes the artifact
+   visibly stale rather than silently different. The alternative, citing nothing, is what
+   ships today. Decide before Phase 2 keys benchmark results, because a benchmark run
+   that cannot say which vocabulary produced it is not reproducible.
+4. **Which scope owns the source when a workbook and a space disagree.** A workbook can
+   now ask (`14-frontend-design.md` §11), and `api/agent.py:ask` already takes
+   `space`/`data_source`/`limit` — so a question asked inside a workbook has two
+   plausible authorities for "which data source, under whose instructions". Today
+   `Nakhoda Space` is the sole scoping authority and the panel adds none, which is the
+   conservative choice rather than the settled one. Insights' precedent points the other
+   way: `DashboardChatButton.vue` passes a `dashboard-context` prop, scoping the chat to
+   the artifact it floats over. Deciding this the other way means a workbook can override
+   a space, which is a precedence question (invariant 4's ladder), not an integration
+   detail. Decide before a workbook holds an instruction of its own.
 
 ### Closed — model provider and tiering
 

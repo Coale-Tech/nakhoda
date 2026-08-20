@@ -4,3 +4,5 @@
 
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
+nakhoda.patches.v1_0.migrate_ai_provider_settings
+nakhoda.patches.v1_0.data_store_setting_defaults

@@ -1,0 +1,120 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "hash",
+ "creation": "2026-08-15 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "workbook",
+  "items",
+  "vertical_compact_layout",
+  "preview_image",
+  "share_link",
+  "is_public",
+  "linked_charts"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title"
+  },
+  {
+   "fieldname": "workbook",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Workbook",
+   "options": "Nakhoda Workbook",
+   "reqd": 1
+  },
+  {
+   "description": "Tiles and their grid placement, as a JSON list. Each entry carries a `layout` of `{i, x, y, w, h}` on a 20-column grid.",
+   "fieldname": "items",
+   "fieldtype": "JSON",
+   "label": "Items"
+  },
+  {
+   "default": "1",
+   "fieldname": "vertical_compact_layout",
+   "fieldtype": "Check",
+   "label": "Compact Vertically"
+  },
+  {
+   "fieldname": "preview_image",
+   "fieldtype": "Data",
+   "label": "Preview Image"
+  },
+  {
+   "fieldname": "share_link",
+   "fieldtype": "Data",
+   "label": "Share Link"
+  },
+  {
+   "fieldname": "is_public",
+   "fieldtype": "Check",
+   "label": "Is Public"
+  },
+  {
+   "description": "Derived from `items` on every save. Exists so `frappe.get_all` can answer \"which dashboards use this chart\" without parsing JSON in Python.",
+   "fieldname": "linked_charts",
+   "fieldtype": "Table MultiSelect",
+   "label": "Linked Charts",
+   "options": "Nakhoda Dashboard Chart",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-15 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nakhoda",
+ "name": "Nakhoda Dashboard",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
+}

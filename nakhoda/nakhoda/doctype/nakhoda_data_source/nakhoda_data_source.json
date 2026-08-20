@@ -12,7 +12,22 @@
   "is_default",
   "column_break_state",
   "status",
-  "last_checked"
+  "last_checked",
+  "connection_section",
+  "database_type",
+  "host",
+  "port",
+  "use_ssl",
+  "column_break_credentials",
+  "database_name",
+  "username",
+  "password",
+  "schema",
+  "advanced_section",
+  "connection_string",
+  "http_headers",
+  "is_ducklake",
+  "is_frappe_db"
  ],
  "fields": [
   {
@@ -24,12 +39,12 @@
   },
   {
    "default": "Site Database",
-   "description": "Site Database queries the site's own tables live. DuckDB Warehouse queries the synced local copy.",
+   "description": "Site Database queries the site's own tables live. DuckDB Warehouse queries the synced local copy. External Database queries a server you configure below.",
    "fieldname": "source_type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Source Type",
-   "options": "Site Database\nDuckDB Warehouse",
+   "options": "Site Database\nDuckDB Warehouse\nExternal Database",
    "reqd": 1
   },
   {
@@ -56,11 +71,113 @@
    "fieldtype": "Datetime",
    "label": "Last Checked",
    "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.source_type == \"External Database\"",
+   "fieldname": "connection_section",
+   "fieldtype": "Section Break",
+   "label": "Connection"
+  },
+  {
+   "default": "MariaDB",
+   "depends_on": "eval:doc.source_type == \"External Database\"",
+   "description": "Which engine this server runs. Determines the driver and the SQL dialect the compiler emits.",
+   "fieldname": "database_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Database Type",
+   "options": "MariaDB\nPostgreSQL\nClickHouse\nDuckDB\nSQLite"
+  },
+  {
+   "depends_on": "eval:doc.source_type == \"External Database\" && !['DuckDB', 'SQLite'].includes(doc.database_type)",
+   "fieldname": "host",
+   "fieldtype": "Data",
+   "label": "Host"
+  },
+  {
+   "depends_on": "eval:doc.source_type == \"External Database\" && !['DuckDB', 'SQLite'].includes(doc.database_type)",
+   "fieldname": "port",
+   "fieldtype": "Int",
+   "label": "Port",
+   "non_negative": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.source_type == \"External Database\" && !['DuckDB', 'SQLite'].includes(doc.database_type)",
+   "fieldname": "use_ssl",
+   "fieldtype": "Check",
+   "label": "Use SSL"
+  },
+  {
+   "fieldname": "column_break_credentials",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.source_type == \"External Database\"",
+   "description": "For DuckDB, a file name under the site's private files, or an http(s) URL to attach. For SQLite, a file name under the site's private files.",
+   "fieldname": "database_name",
+   "fieldtype": "Data",
+   "label": "Database Name"
+  },
+  {
+   "depends_on": "eval:doc.source_type == \"External Database\" && !['DuckDB', 'SQLite'].includes(doc.database_type)",
+   "fieldname": "username",
+   "fieldtype": "Data",
+   "label": "Username"
+  },
+  {
+   "depends_on": "eval:doc.source_type == \"External Database\" && !['DuckDB', 'SQLite'].includes(doc.database_type)",
+   "fieldname": "password",
+   "fieldtype": "Password",
+   "label": "Password"
+  },
+  {
+   "depends_on": "eval:doc.database_type == \"PostgreSQL\"",
+   "description": "Comma-separated for more than one. Defaults to public.",
+   "fieldname": "schema",
+   "fieldtype": "Data",
+   "label": "Schema"
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval:doc.source_type == \"External Database\"",
+   "fieldname": "advanced_section",
+   "fieldtype": "Section Break",
+   "label": "Advanced"
+  },
+  {
+   "depends_on": "eval:doc.database_type == \"PostgreSQL\"",
+   "description": "A full connection URI. When set, it is used instead of the host, port, user, password and database above.",
+   "fieldname": "connection_string",
+   "fieldtype": "Text",
+   "label": "Connection String"
+  },
+  {
+   "depends_on": "eval:doc.database_type == \"DuckDB\"",
+   "description": "Headers sent when attaching an http(s) DuckDB database, as a JSON object.",
+   "fieldname": "http_headers",
+   "fieldtype": "JSON",
+   "label": "HTTP Headers"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.database_type == \"DuckDB\"",
+   "fieldname": "is_ducklake",
+   "fieldtype": "Check",
+   "label": "Is Ducklake"
+  },
+  {
+   "default": "0",
+   "description": "Set automatically when the server turns out to be a Frappe site, which is what makes its DocType joins discoverable.",
+   "fieldname": "is_frappe_db",
+   "fieldtype": "Check",
+   "label": "Is Frappe Database",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-12 00:00:00.000000",
+ "modified": "2026-08-15 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Nakhoda",
  "name": "Nakhoda Data Source",

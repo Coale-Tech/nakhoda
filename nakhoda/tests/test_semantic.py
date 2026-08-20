@@ -4,7 +4,7 @@ The research measured a text file, not this code. Without this test the 17.5-poi
 lift belongs to an artifact in a folder and the shipped generator merely resembles
 it. So: feed the same eight DocTypes, from the same JSON the harness read, through
 the module, and require the output to match `semantic_bench/context_b.txt` line for
-line - with one allowed divergence, asserted explicitly rather than tolerated.
+line - with two allowed divergences, asserted explicitly rather than tolerated.
 
 Needs no site and no database: `describe()` reads anything that answers `.get()`,
 which is the whole reason it was written that way.
@@ -46,14 +46,15 @@ DOCTYPES = [
 	"Sales Person",
 ]
 
-# `image_view` is an `Image` field on Sales Invoice Item: a widget that re-renders
-# the `image` column. It has no column of its own - the harness' own DDL
-# (`context_a.txt`) omits it, and Frappe excludes `Image` from `data_fieldtypes`.
-# The artifact published it anyway, so the measured 95.8% was scored against a
-# schema advertising a column that did not exist. The generator drops it. This is
-# the only line it is allowed to differ by, and the test fails if it ever differs
-# by another.
-KNOWN_ARTIFACT_DEFECT = "  image_view  VARCHAR"
+# Two fields the artifact published that have no column: `image_view` (an `Image`
+# field on Sales Invoice Item - a widget that re-renders the `image` column, and
+# Frappe excludes `Image` from `data_fieldtypes`) and `last_scanned_warehouse` (a
+# `Data` field on Purchase Receipt with `is_virtual: 1` - computed on read, never
+# written, so `SELECT` cannot name it either). The measured 95.8% was scored
+# against a schema advertising two columns that did not exist. The generator
+# drops both. This is the only pair of lines the diff is allowed to carry, and
+# the test fails if it ever differs by another.
+KNOWN_ARTIFACT_DEFECTS = frozenset({"  image_view  VARCHAR", "  last_scanned_warehouse  VARCHAR"})
 
 
 def erpnext_root() -> Path | None:
@@ -99,16 +100,18 @@ class GateA(unittest.TestCase):
 		cls.artifact = ARTIFACT.read_text()
 
 	def test_matches_the_measured_artifact(self):
-		expected = [ln for ln in self.artifact.splitlines() if ln != KNOWN_ARTIFACT_DEFECT]
+		expected = [ln for ln in self.artifact.splitlines() if ln not in KNOWN_ARTIFACT_DEFECTS]
 		actual = self.generated.splitlines()
 		if expected != actual:
 			diff = difflib.unified_diff(expected, actual, "measured", "generated", lineterm="", n=1)
 			self.fail("the generator no longer reproduces the measured layer:\n" + "\n".join(diff))
 
 	def test_drops_the_phantom_column(self):
-		"""The one divergence, asserted as a fix rather than accepted as drift."""
-		self.assertIn(KNOWN_ARTIFACT_DEFECT, self.artifact, "artifact changed; re-check the defect")
+		"""The two divergences, each asserted as a fix rather than accepted as drift."""
+		for defect in KNOWN_ARTIFACT_DEFECTS:
+			self.assertIn(defect, self.artifact, "artifact changed; re-check the defect")
 		self.assertNotIn("image_view", self.generated)
+		self.assertNotIn("last_scanned_warehouse", self.generated)
 		self.assertNotIn("Image", HAS_COLUMN, "frappe now says Image has a column")
 
 	def test_conventions_survive(self):

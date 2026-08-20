@@ -53,6 +53,7 @@ from typing import Any
 
 import ibis.expr.types as ir
 
+from nakhoda.engine.errors import GrammarError
 from nakhoda.engine.expression import ExpressionError, compile_expr, is_aggregate, validate
 
 #: The join key column, projected away before the caller sees the table.
@@ -71,8 +72,19 @@ OPERATIONS = ("source", "join", "filter", "select", "summarize", "order_by", "li
 #: compiler never learns which backend it is targeting.
 TableResolver = Callable[[str], ir.Table]
 
+#: Resolves a stored query's name to its operations. Supplied by the caller for
+#: the same reason `TableResolver` is: reading a `Nakhoda Query` row is a
+#: document concern, and this module never imports Frappe. Without one, a
+#: pipeline that reads another query is refused rather than silently emptied.
+QueryProvider = Callable[[str], Any]
 
-class OperationError(ValueError):
+#: How deep query composition may nest. A query reading a query reading a query
+#: is a real thing analysts build; ten levels is not, and an unbounded walk
+#: turns one page load into an unbounded number of document reads.
+MAX_QUERY_DEPTH = 10
+
+
+class OperationError(GrammarError):
 	"""A malformed pipeline."""
 
 
@@ -129,16 +141,51 @@ def validate_pipeline(operations: Any) -> list[dict]:
 	return list(operations)
 
 
+def query_reference(spec: Any) -> str | None:
+	"""The stored query this table spec reads, or `None` for a physical table.
+
+	One reader for the one shape, so the compiler, the provenance walk and the
+	document layer that records which queries a query depends on cannot disagree
+	about what a reference looks like.
+	"""
+	if isinstance(spec, dict) and spec.get("type") == "query":
+		name = spec.get("query_name")
+		return name if isinstance(name, str) and name else None
+	return None
+
+
+def _validate_table(spec: Any, path: str) -> None:
+	"""A table is a physical table name, or another query's result.
+
+	Composition is the reason the workbook exists: an analyst builds a base
+	query once and derives from it, rather than pasting the same six operations
+	into four pipelines. The reference is by name, not by value, so editing the
+	base changes every query that reads it - which is the point, and also why
+	`compile_pipeline` refuses a cycle instead of following one.
+	"""
+	if isinstance(spec, str):
+		if not spec:
+			raise OperationError(f"{path}: table must be a non-empty string")
+		return
+	if isinstance(spec, dict):
+		if spec.get("type") != "query":
+			raise OperationError(
+				f"{path}: a table object must be {{'type': 'query', 'query_name': ...}}, got {spec!r}"
+			)
+		if not query_reference(spec):
+			raise OperationError(f"{path}: query_name must be a non-empty string")
+		return
+	raise OperationError(f"{path}: table must be a table name or a query reference, got {spec!r}")
+
+
 def _validate_one(op: dict, path: str) -> None:
 	kind = op["type"]
 
 	if kind == "source":
-		if not isinstance(op.get("table"), str) or not op["table"]:
-			raise OperationError(f"{path}: table must be a non-empty string")
+		_validate_table(op.get("table"), path)
 
 	elif kind == "join":
-		if not isinstance(op.get("table"), str) or not op["table"]:
-			raise OperationError(f"{path}: table must be a non-empty string")
+		_validate_table(op.get("table"), path)
 		how = op.get("how", "inner")
 		if how not in JOIN_TYPES:
 			raise OperationError(f"{path}: how must be one of {list(JOIN_TYPES)}, got {how!r}")
@@ -265,13 +312,65 @@ def split_pipeline(operations: Sequence[dict]) -> tuple[list[dict], dict | None]
 	return ops, None
 
 
-def compile_pipeline(operations: Any, resolve: TableResolver) -> ir.Table:
+def source_tables(operations: Any, queries: QueryProvider | None = None) -> list[str]:
+	"""Every physical table this pipeline reads, following query references.
+
+	Provenance and the permission notice both answer "which doctypes did this
+	touch". Reading only the top-level `table` slots would answer that wrongly
+	for a derived query - it would name the query, not the tables underneath -
+	and a receipt that omits a table the statement read is worse than no
+	receipt. Unresolvable references are skipped rather than raised: this is
+	read-only provenance, and refusing here would break the inspector for a
+	pipeline that still runs.
+	"""
+	found: list[str] = []
+	seen: set[str] = set()
+
+	def walk(ops: Any, visiting: tuple[str, ...]) -> None:
+		for op in validate_pipeline(ops):
+			if op["type"] not in ("source", "join"):
+				continue
+			spec = op["table"]
+			name = query_reference(spec)
+			if name is None:
+				if spec not in seen:
+					seen.add(spec)
+					found.append(spec)
+				continue
+			if queries is None or name in visiting or len(visiting) >= MAX_QUERY_DEPTH:
+				continue
+			try:
+				inner = queries(name)
+			except Exception:
+				continue
+			walk(inner, (*visiting, name))
+
+	walk(operations, ())
+	return found
+
+
+def compile_pipeline(
+	operations: Any, resolve: TableResolver, queries: QueryProvider | None = None
+) -> ir.Table:
 	"""Compile a pipeline to a single unexecuted ibis table expression.
 
 	Refuses a pipeline that ends in an ML operation - `forecast` and friends
 	cannot compile to SQL. Run those through `nakhoda.engine.pipeline.run`,
 	which compiles the prefix here and applies the ML step separately.
+
+	`queries` resolves a stored query named as a source into its operations, so
+	a derived query compiles to one statement with the base as a subquery. The
+	base's tables go through the same `resolve`, which is what keeps a
+	viewer's row and column filters applied underneath the composition: a
+	reader cannot see through a colleague's query to rows of their own that
+	permissions exclude.
 	"""
+	return _compile(operations, resolve, queries, ())
+
+
+def _compile(
+	operations: Any, resolve: TableResolver, queries: QueryProvider | None, visiting: tuple[str, ...]
+) -> ir.Table:
 	ops = validate_pipeline(operations)
 	prefix, ml_op = split_pipeline(ops)
 	if ml_op is not None:
@@ -281,11 +380,44 @@ def compile_pipeline(operations: Any, resolve: TableResolver) -> ir.Table:
 			f"an ML step."
 		)
 
-	table = resolve(prefix[0]["table"])
+	table = _table(prefix[0]["table"], resolve, queries, visiting, "operations[0]")
 	for i, op in enumerate(prefix[1:], start=1):
-		table = _apply(op, table, resolve, f"operations[{i}]")
+		table = _apply(op, table, resolve, queries, visiting, f"operations[{i}]")
 
 	return table
+
+
+def _table(
+	spec: Any,
+	resolve: TableResolver,
+	queries: QueryProvider | None,
+	visiting: tuple[str, ...],
+	path: str,
+) -> ir.Table:
+	"""One table slot: a physical table, or another query compiled inline."""
+	name = query_reference(spec)
+	if name is None:
+		return resolve(spec)
+
+	if queries is None:
+		raise OperationError(
+			f"{path}: this pipeline reads the stored query {name!r}, and no query source was "
+			f"supplied to resolve it. Run it through an endpoint that passes one."
+		)
+	if name in visiting:
+		cycle = " -> ".join((*visiting, name))
+		raise OperationError(f"{path}: query {name!r} reads itself ({cycle}).")
+	if len(visiting) >= MAX_QUERY_DEPTH:
+		raise OperationError(
+			f"{path}: query composition is more than {MAX_QUERY_DEPTH} deep. Flatten the chain "
+			f"or store an intermediate result."
+		)
+
+	# Whatever the provider raises propagates untouched. A missing or unreadable
+	# query is the *document* layer's refusal - a permission error, not a
+	# malformed pipeline - and rewrapping it here would render a 403 as "invalid
+	# pipeline" and tell the user to fix operations they got right.
+	return _compile(queries(name), resolve, queries, (*visiting, name))
 
 
 def _boolean(value: ir.Value, path: str) -> ir.BooleanValue:
@@ -302,11 +434,18 @@ def _boolean(value: ir.Value, path: str) -> ir.BooleanValue:
 	return value
 
 
-def _apply(op: dict, table: ir.Table, resolve: TableResolver, path: str) -> ir.Table:
+def _apply(
+	op: dict,
+	table: ir.Table,
+	resolve: TableResolver,
+	queries: QueryProvider | None,
+	visiting: tuple[str, ...],
+	path: str,
+) -> ir.Table:
 	kind = op["type"]
 
 	if kind == "join":
-		return _join(op, table, resolve, path)
+		return _join(op, table, resolve, queries, visiting, path)
 
 	if kind == "filter":
 		where = compile_expr(op["where"], table, path=f"{path}.where")
@@ -339,7 +478,14 @@ def _apply(op: dict, table: ir.Table, resolve: TableResolver, path: str) -> ir.T
 	raise OperationError(f"{path}: unreachable operation {kind!r}")
 
 
-def _join(op: dict, left: ir.Table, resolve: TableResolver, path: str) -> ir.Table:
+def _join(
+	op: dict,
+	left: ir.Table,
+	resolve: TableResolver,
+	queries: QueryProvider | None,
+	visiting: tuple[str, ...],
+	path: str,
+) -> ir.Table:
 	"""Join, taking only the named columns from the right table.
 
 	The right side is narrowed to the key plus its named selections *before* the
@@ -347,7 +493,7 @@ def _join(op: dict, left: ir.Table, resolve: TableResolver, path: str) -> ir.Tab
 	disambiguating suffix. A name that would shadow a left column is an error
 	here rather than a silently renamed column downstream.
 	"""
-	right = resolve(op["table"])
+	right = _table(op["table"], resolve, queries, visiting, path)
 	selections = op.get("select") or []
 
 	projection = {_KEY: compile_expr(op["right_on"], right, path=f"{path}.right_on")}
@@ -373,13 +519,18 @@ __all__ = [
 	"FORECAST_FREQS",
 	"FORECAST_METHODS",
 	"JOIN_TYPES",
+	"MAX_QUERY_DEPTH",
 	"ML_OPERATIONS",
 	"OPERATIONS",
 	"SCORE_METHODS",
 	"SEGMENT_METHODS",
 	"ExpressionError",
+	"GrammarError",
 	"OperationError",
+	"QueryProvider",
 	"compile_pipeline",
+	"query_reference",
+	"source_tables",
 	"split_pipeline",
 	"validate_pipeline",
 ]

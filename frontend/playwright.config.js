@@ -17,6 +17,12 @@ export default defineConfig({
 	use: {
 		baseURL: "http://127.0.0.1:5178/assets/nakhoda/frontend/",
 		trace: "retain-on-failure",
+		// Pinned, and deliberately not the site's zone (`SITE_TIME_ZONE` in
+		// `fixtures/data_store.js`): Frappe writes naive timestamps in the
+		// site's zone, so every relative-time column is only correct if the
+		// frontend converts. Reading a machine-local clock instead would make
+		// these assertions pass or fail by where the developer sits.
+		timezoneId: "Africa/Nairobi",
 	},
 	webServer: {
 		command: "yarn build && yarn serve",

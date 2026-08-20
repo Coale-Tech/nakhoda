@@ -26,6 +26,7 @@ class NakhodaAgentRun(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		assumptions: DF.Code | None
 		degradation_reason: DF.SmallText | None
 		degraded: DF.Check
 		error: DF.SmallText | None
@@ -41,6 +42,7 @@ class NakhodaAgentRun(Document):
 		sql: DF.Code | None
 		status: DF.Literal["ok", "error"]
 		source: DF.Literal["generated", "verified"]
+		thread_turn: DF.Link | None
 		tier: DF.Literal["", "FAST", "BALANCED", "PREMIUM"]
 		tier_reason: DF.SmallText | None
 		user: DF.Link

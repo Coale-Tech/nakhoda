@@ -11,6 +11,7 @@
   "question",
   "source",
   "matched_verified_query",
+  "thread_turn",
   "routing_section",
   "tier",
   "tier_reason",
@@ -21,6 +22,7 @@
   "degradation_reason",
   "result_section",
   "operations",
+  "assumptions",
   "sql",
   "row_count",
   "execution_time",
@@ -67,6 +69,14 @@
    "fieldtype": "Link",
    "label": "Matched Verified Query",
    "options": "Nakhoda Verified Query",
+   "read_only": 1
+  },
+  {
+   "description": "Set when this run was delegated by a multi-turn loop (`agent/thread.py`) rather than asked directly. Every SQL statement a loop causes stays its own permission-checked row; this names the prompt that caused it.",
+   "fieldname": "thread_turn",
+   "fieldtype": "Link",
+   "label": "Thread Turn",
+   "options": "Nakhoda Thread Turn",
    "read_only": 1
   },
   {
@@ -134,6 +144,14 @@
    "fieldname": "operations",
    "fieldtype": "Code",
    "label": "Operations",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "description": "The model's own assumption list, one entry per choice the question did not spell out - `\"applied\"` when the schema settled it unambiguously, `\"needs_you\"` when the model picked a side on a genuinely ambiguous reading. Set only on a generated answer; empty on verified.",
+   "fieldname": "assumptions",
+   "fieldtype": "Code",
+   "label": "Assumptions",
    "options": "JSON",
    "read_only": 1
   },

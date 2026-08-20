@@ -1,0 +1,141 @@
+{
+ "actions": [],
+ "autoname": "field:metric_name",
+ "creation": "2026-08-16 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "metric_name",
+  "document",
+  "fieldname",
+  "aggregate",
+  "definition",
+  "filters",
+  "grain",
+  "synonyms",
+  "steward",
+  "certified"
+ ],
+ "fields": [
+  {
+   "description": "The measure's business name, and the row's own name - \"Gross Revenue\", \"Units Sold\". One definition per name, site-wide.",
+   "fieldname": "metric_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Metric",
+   "reqd": 1
+  },
+  {
+   "description": "The document this measure is read from. Certified, its words become evidence for that document in retrieval.",
+   "fieldname": "document",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Document",
+   "options": "DocType",
+   "reqd": 1
+  },
+  {
+   "description": "The column the aggregate is applied to. Required for every aggregate except `Count`, which counts rows.",
+   "fieldname": "fieldname",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Fieldname"
+  },
+  {
+   "default": "Sum",
+   "description": "How the column becomes one number.",
+   "fieldname": "aggregate",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Aggregate",
+   "options": "Sum\nCount\nDistinct Count\nAverage\nMin\nMax"
+  },
+  {
+   "description": "The measure in a sentence a person would say. This is what makes the row worth more than the column it names.",
+   "fieldname": "definition",
+   "fieldtype": "Small Text",
+   "label": "Definition",
+   "reqd": 1
+  },
+  {
+   "description": "Which rows count, in plain words - \"submitted only, excluding returns\". Documentation for a person and for a model; nothing compiles it.",
+   "fieldname": "filters",
+   "fieldtype": "Small Text",
+   "label": "Filters"
+  },
+  {
+   "description": "What one unit of this measure describes - \"per invoice\", \"per item line\".",
+   "fieldname": "grain",
+   "fieldtype": "Data",
+   "label": "Grain"
+  },
+  {
+   "description": "Other words for this measure, so that \"turnover\" can find the document that holds revenue.",
+   "fieldname": "synonyms",
+   "fieldtype": "Data",
+   "label": "Synonyms"
+  },
+  {
+   "description": "Who owns this definition. A measure nobody owns is a measure nobody trusts.",
+   "fieldname": "steward",
+   "fieldtype": "Link",
+   "label": "Steward",
+   "options": "User"
+  },
+  {
+   "default": "0",
+   "description": "Only a certified measure is evidence: retrieval reads certified rows and ignores drafts, so an in-progress definition cannot move an answer.",
+   "fieldname": "certified",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Certified"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nakhoda",
+ "name": "Nakhoda Metric",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nakhoda User",
+   "share": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "metric_name",
+ "track_changes": 1
+}

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { askQuestion, openInspector } from "./fixtures/agent.js";
+import { askQuestion, askInjectedQuestion, openInspector } from "./fixtures/agent.js";
 
 /**
  * Phase 5 gate (`12-build-plan.md` §5, gate index row "5 - badges are
@@ -9,11 +9,13 @@ import { askQuestion, openInspector } from "./fixtures/agent.js";
  * `SEMANTIC MODEL` was a real defect in an earlier draft - see the
  * docstring in `OriginBadge.vue`.
  *
- * One origin ships. `src/agent.js:buildInspector` stamps every operation
+ * Two origins ship. `src/agent.js:buildInspector` stamps every operation
  * `origin: "model"`, because the pipeline the audit record stores does not
- * distinguish a step lifted from the question from one the model chose, and
- * `engine/permissions.py` inlines its filters at SQL-compile time rather
- * than appending an operation - so `injected` never appears either.
+ * distinguish a step lifted from the question from one the model chose.
+ * `engine/permissions.py`'s `injected()` now reports which tables a
+ * row-level filter touched, so `buildInspector` appends a read-only
+ * `origin: "injected"` row per entry whenever `ask.injected` is non-empty.
+ * `from question` and `link graph` remain unmet.
  */
 test("every operation carries an origin badge, and none is fabricated", async ({ page }) => {
 	await askQuestion(page);
@@ -31,13 +33,29 @@ test("every operation carries an origin badge, and none is fabricated", async ({
 	expect([...labels]).toEqual(["semantic model"]);
 });
 
+test("a permission filter compiled into the query renders an injected origin badge", async ({ page }) => {
+	await askInjectedQuestion(page);
+	const inspector = await openInspector(page);
+
+	const ops = inspector.locator(".op");
+	const badges = inspector.locator(".op-origin");
+	await expect(badges).toHaveCount(await ops.count());
+
+	const labels = (await badges.allTextContents()).map((t) => t.trim().toLowerCase());
+	expect(labels).toContain("semantic model");
+	expect(labels).toContain("injected");
+});
+
 test.fixme("no two origin badges share a background/color/box-shadow triple", async ({ page }) => {
 	/**
 	 * Unblocked by the engine reporting per-operation provenance: a
-	 * `from question` / `link graph` distinction in the stored pipeline, and
-	 * permission filters emitted as `injected` operations rather than inlined
-	 * into SQL. Then all four appearances render in one screen and this
-	 * measures them pairwise, as it did against the mockup.
+	 * `from question` / `link graph` distinction in the stored pipeline.
+	 * `injected` now ships (see the test above) but only ever appears
+	 * alongside `model` rows, never all four together, since a compiled
+	 * pipeline still doesn't record whether an operation was lifted from
+	 * the question or picked by the model. Once that distinction exists,
+	 * all four appearances render in one screen and this measures them
+	 * pairwise, as it did against the mockup.
 	 */
 	await askQuestion(page);
 	const inspector = await openInspector(page);

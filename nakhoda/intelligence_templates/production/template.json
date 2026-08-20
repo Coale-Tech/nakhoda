@@ -4,16 +4,21 @@
   "icon": "settings",
   "color": "#EF4444",
   "source": null,
+  "source_query": {
+    "title": "Production Analytics source",
+    "question": "Production Analytics dashboard source",
+    "operations": [{ "type": "source", "table": "tabWork Order" }]
+  },
   "metrics": [
     {
       "label": "Work Orders Completed",
-      "expression": "count_if(status == \"Completed\")",
+      "expression": "{\"fn\": \"sum\", \"args\": [{\"fn\": \"eq\", \"args\": [{\"col\": \"status\"}, {\"lit\": \"Completed\"}]}]}",
       "format": "Number",
       "direction": "Higher Is Better"
     },
     {
       "label": "Actual Operating Cost",
-      "expression": "sum(actual_operating_cost)",
+      "expression": "{\"fn\": \"sum\", \"args\": [{\"col\": \"actual_operating_cost\"}]}",
       "format": "Currency",
       "direction": "Lower Is Better"
     }

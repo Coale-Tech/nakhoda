@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { Button } from "frappe-ui";
+import { Breadcrumbs, Button } from "frappe-ui";
 import QueryBuilder from "../components/QueryBuilder.vue";
 import { useQuery } from "../composables/useQuery.js";
 
@@ -17,6 +17,11 @@ const title = computed(() => {
 	if (isFromAsk.value) return "From Ask";
 	return queryName.value;
 });
+
+const crumbs = computed(() => [
+	{ label: "Queries", route: { name: "Queries" } },
+	{ label: title.value, route: { name: "Query", params: { name: route.params.name } } },
+]);
 
 const stateOperations = window.history?.state?.operations;
 
@@ -91,27 +96,26 @@ function escapeHtml(value) {
 </script>
 
 <template>
-	<div class="flex h-full flex-col">
-		<div class="flex h-12 flex-none items-center justify-between border-b border-outline-gray-2 px-5">
-			<div class="flex items-center gap-2">
-				<Button variant="ghost" icon="lucide-arrow-left" @click="router.push({ name: 'Queries' })" />
-				<span class="text-base-semibold text-ink-gray-9">{{ title }}</span>
-			</div>
-			<Button
-				variant="solid"
-				theme="gray"
-				icon-left="lucide-save"
-				label="Save"
-				:loading="queryApi.saving"
-				@click="save"
-			/>
-		</div>
-		<QueryBuilder
-			v-model:pipeline="pipeline"
-			:sql="sql"
-			:results="results"
-			:loading="queryApi.running"
-			@run="run"
+	<header
+		class="flex h-12 shrink-0 items-center justify-between border-b border-outline-gray-2 py-2.5 pl-5 pr-2"
+	>
+		<Breadcrumbs :items="crumbs" />
+		<Button
+			variant="solid"
+			theme="gray"
+			icon-left="lucide-save"
+			label="Save"
+			:loading="queryApi.saving"
+			@click="save"
 		/>
-	</div>
+	</header>
+
+	<QueryBuilder
+		v-model:pipeline="pipeline"
+		class="min-h-0 flex-1"
+		:sql="sql"
+		:results="results"
+		:loading="queryApi.running"
+		@run="run"
+	/>
 </template>

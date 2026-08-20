@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import hashlib
 from collections.abc import Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
 	import pandas as pd
@@ -39,6 +39,49 @@ def key(sql: str, identity: str) -> str:
 	"""The cache key for a compiled query against a given backend."""
 	digest = hashlib.sha256(f"{identity}\n{sql}".encode()).hexdigest()[:_DIGEST]
 	return f"nakhoda:result:{digest}"
+
+
+def _redis() -> Any:
+	"""The site's redis handle.
+
+	`frappe.cache` is typed `RedisWrapper | None` because it is `None` until
+	`frappe.init` runs. Inside a request it never is, and asserting that once
+	here is more honest than three call sites that each look like they might
+	be calling `None`.
+	"""
+	import frappe
+
+	handle: Any = frappe.cache
+	return handle()
+
+
+def get(cache_key: str) -> str | None:
+	"""A stored value, or `None` when redis is unreachable.
+
+	Every cache read in the app goes through here rather than through
+	`frappe.cache()` directly. Not ceremony: a cache that raises is a cache
+	that takes down the request it was meant to speed up, and "swallow the
+	error" is a decision that should exist once, not at each call site.
+	"""
+	try:
+		return _redis().get_value(cache_key)
+	except Exception:
+		return None
+
+
+def put(cache_key: str, value: str, *, ttl: int = DEFAULT_TTL) -> None:
+	try:
+		_redis().set_value(cache_key, value, expires_in_sec=ttl)
+	except Exception:
+		pass
+
+
+def drop(cache_key: str) -> None:
+	"""Forget one entry. Called when the thing it described changed."""
+	try:
+		_redis().delete_value(cache_key)
+	except Exception:
+		pass
 
 
 def cached(
@@ -58,10 +101,7 @@ def cached(
 	import pandas as pd
 
 	cache_key = key(sql, identity)
-	try:
-		stored = frappe.cache().get_value(cache_key)
-	except Exception:
-		stored = None
+	stored = get(cache_key)
 	if stored is not None:
 		try:
 			return pd.DataFrame(frappe.parse_json(stored))
@@ -69,10 +109,5 @@ def cached(
 			pass
 
 	result = compute()
-	try:
-		frappe.cache().set_value(
-			cache_key, frappe.as_json(result.to_dict(orient="records")), expires_in_sec=ttl
-		)
-	except Exception:
-		pass
+	put(cache_key, frappe.as_json(result.to_dict(orient="records")), ttl=ttl)
 	return result

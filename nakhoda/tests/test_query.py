@@ -45,6 +45,46 @@ class QueryApi(unittest.TestCase):
 		fetched = query.get_query(saved["name"])
 		self.assertEqual(fetched["operations"], COUNT_INVOICES)
 
+	def test_a_query_inside_a_workbook_is_not_listed_here(self):
+		"""The page is the home for unfiled queries only.
+
+		A query with a workbook is already a row in that workbook's sidebar;
+		listing it here as well made this page a shadow of every workbook.
+		"""
+		workbook = frappe.get_doc({"doctype": "Nakhoda Workbook", "title": "Query home"}).insert()
+		filed = query.save_query(title="Filed count", operations=COUNT_INVOICES, workbook=workbook.name)
+		unfiled = query.save_query(title="Unfiled count", operations=COUNT_INVOICES)
+
+		names = [q["name"] for q in query.list_queries()]
+		self.assertIn(unfiled["name"], names)
+		self.assertNotIn(filed["name"], names)
+
+	def test_the_list_is_the_callers_own(self):
+		"""`get_all` does not check permissions, so this listed everyone's rows.
+
+		The resolver in `nakhoda.permissions` only reaches a list query through
+		`get_list`; a title that 403s when clicked is the failure this answers.
+		"""
+		mine = query.save_query(title="Admin count", operations=COUNT_INVOICES)
+
+		other = frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": "nakhoda-query-second@example.com",
+				"first_name": "Second",
+				"send_welcome_email": 0,
+				"roles": [{"role": "Nakhoda User"}],
+			}
+		)
+		other.flags.ignore_permissions = True
+		other.insert()
+
+		frappe.set_user(other.name)
+		theirs = query.save_query(title="Their count", operations=COUNT_INVOICES)
+		names = [q["name"] for q in query.list_queries()]
+		self.assertIn(theirs["name"], names)
+		self.assertNotIn(mine["name"], names)
+
 	def test_update_query(self):
 		saved = query.save_query(title="Invoice count", operations=COUNT_INVOICES)
 		updated = query.save_query(name=saved["name"], title="Updated count", operations=COUNT_INVOICES)
@@ -100,7 +140,6 @@ class QueryApi(unittest.TestCase):
 		# Blogger does not have read access to Sales Invoice.
 		with self.assertRaises(frappe.PermissionError):
 			query.get_schema("Sales Invoice")
-
 
 	def test_permission_boundary(self):
 		"""A reader cannot write, and a non-reader cannot read."""

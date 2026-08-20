@@ -1,4 +1,4 @@
-import { computed, reactive, ref } from "vue";
+import { reactive, ref } from "vue";
 import { useCall } from "frappe-ui";
 
 /**
@@ -20,10 +20,15 @@ export function useSources() {
 	});
 
 	const schemaCall = useCall({
-		url: computed(() => {
-			if (!schema.value?.doctype) return "";
-			return `/api/v2/method/nakhoda.api.query.get_schema?doctype=${encodeURIComponent(schema.value.doctype)}`;
-		}),
+		url: "/api/v2/method/nakhoda.api.query.get_schema",
+		// `useCall` always appends its own `?` + querystring for GET requests
+		// (even with no params) - building `doctype=...` into `url` ourselves
+		// produced a double `?` once frappe-ui appended its own, corrupting the
+		// doctype value into a 404. `params` accepts a plain object or a plain
+		// `() => TParams` function (per `UseCallOptions`) - NOT a Vue `computed()`
+		// ref, which `unrefObject` cannot unwrap and instead iterates as if the
+		// ref's own internal fields (`fn`, `dep`, `effect`, ...) were params.
+		params: () => (schema.value?.doctype ? { doctype: schema.value.doctype } : undefined),
 		method: "GET",
 		immediate: false,
 	});
@@ -33,7 +38,11 @@ export function useSources() {
 		error.value = null;
 		try {
 			const result = await listCall.submit();
-			const data = result.data ?? result;
+			// `submit()` resolves `null` on an HTTP-level failure rather than
+			// rejecting (frappe-ui doesn't throw on non-2xx) - without this check
+			// a failed fetch surfaces as a silent empty list instead of `error`.
+			if (result == null && listCall.error) throw listCall.error;
+			const data = result?.data ?? result;
 			sources.value = Array.isArray(data) ? data : [];
 			return sources.value;
 		} catch (e) {
@@ -54,7 +63,8 @@ export function useSources() {
 		try {
 			schema.value = { doctype };
 			const result = await schemaCall.submit();
-			schema.value = result.data ?? result;
+			if (result == null && schemaCall.error) throw schemaCall.error;
+			schema.value = result?.data ?? result;
 			return schema.value;
 		} catch (e) {
 			schema.value = null;

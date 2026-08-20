@@ -6,42 +6,64 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "model_section",
-  "model_provider",
-  "model",
-  "token_budget",
   "limits_section",
   "max_rows",
   "cache_ttl",
   "permissions_section",
-  "strict_columns"
+  "strict_columns",
+  "data_store_section",
+  "enable_data_store",
+  "max_records_to_sync",
+  "column_break_data_store",
+  "max_memory_usage",
+  "ai_section",
+  "enable_ai",
+  "column_break_ai",
+  "ai_provider",
+  "openrouter_section",
+  "openrouter_api_key",
+  "column_break_openrouter",
+  "ai_model",
+  "ai_model_fallback",
+  "openai_section",
+  "openai_auth_mode",
+  "openai_api_key",
+  "openai_base_url",
+  "column_break_openai",
+  "openai_model",
+  "chatgpt_oauth_account_label",
+  "chatgpt_oauth_account_id",
+  "chatgpt_oauth_expires_at",
+  "chatgpt_oauth_access_token",
+  "chatgpt_oauth_refresh_token",
+  "nvidia_section",
+  "nvidia_api_key",
+  "column_break_nvidia",
+  "nvidia_model",
+  "ollama_section",
+  "ollama_base_url",
+  "ollama_api_key",
+  "column_break_ollama",
+  "ollama_model",
+  "moonshot_section",
+  "moonshot_auth_mode",
+  "moonshot_api_key",
+  "column_break_moonshot",
+  "moonshot_model",
+  "kimi_oauth_account_label",
+  "kimi_oauth_expires_at",
+  "kimi_oauth_access_token",
+  "kimi_oauth_refresh_token",
+  "kimi_device_id",
+  "ai_limits_section",
+  "quota_reset_schedule",
+  "last_ai_answer",
+  "column_break_ai_limits",
+  "daily_ai_quota",
+  "ai_quota_used",
+  "quota_window_start"
  ],
  "fields": [
-  {
-   "fieldname": "model_section",
-   "fieldtype": "Section Break",
-   "label": "Model"
-  },
-  {
-   "default": "Anthropic",
-   "fieldname": "model_provider",
-   "fieldtype": "Select",
-   "label": "Model Provider",
-   "options": "OpenAI\nAnthropic\nOpenRouter\nLocal"
-  },
-  {
-   "description": "Provider-specific model id. Recorded on every Agent Run so an answer can be reproduced.",
-   "fieldname": "model",
-   "fieldtype": "Data",
-   "label": "Model"
-  },
-  {
-   "default": "120000",
-   "description": "Ceiling on semantic context sent with one question. The 529-DocType ERPNext schema renders to ~91,735 tokens, so retrieval must prune below this.",
-   "fieldname": "token_budget",
-   "fieldtype": "Int",
-   "label": "Token Budget Per Question"
-  },
   {
    "fieldname": "limits_section",
    "fieldtype": "Section Break",
@@ -71,12 +93,323 @@
    "fieldname": "strict_columns",
    "fieldtype": "Check",
    "label": "Fail On Unreadable Columns"
+  },
+  {
+   "fieldname": "data_store_section",
+   "fieldtype": "Section Break",
+   "label": "Data Store"
+  },
+  {
+   "default": "1",
+   "description": "Off: no new table can be copied into the DuckDB warehouse and the daily refresh stops. Tables already imported stay queryable - a switch that silently made data disappear from answers would be worse than no switch.",
+   "fieldname": "enable_data_store",
+   "fieldtype": "Check",
+   "label": "Enable"
+  },
+  {
+   "default": "1000000",
+   "description": "Maximum rows copied per table into the DuckDB warehouse. A `Nakhoda Table.row_limit` overrides this for one table.",
+   "fieldname": "max_records_to_sync",
+   "fieldtype": "Int",
+   "label": "Row Limit"
+  },
+  {
+   "fieldname": "column_break_data_store",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "512",
+   "description": "Memory ceiling, in MB, applied to the DuckDB connection while a table imports.",
+   "fieldname": "max_memory_usage",
+   "fieldtype": "Int",
+   "label": "Memory Limit (MB)"
+  },
+  {
+   "fieldname": "ai_section",
+   "fieldtype": "Section Break",
+   "label": "AI Provider"
+  },
+  {
+   "default": "1",
+   "description": "Off: no model is ever called - verified queries, the query builder and dashboards still run, and `agent.manager.ask()` answers \"AI is turned off\" instead of guessing.",
+   "fieldname": "enable_ai",
+   "fieldtype": "Check",
+   "label": "Enable AI"
+  },
+  {
+   "fieldname": "column_break_ai",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "openrouter",
+   "depends_on": "enable_ai",
+   "description": "Which endpoint `agent/providers.py` calls, and therefore which credential and model fields below are read. The other providers' fields are ignored while they are not selected.",
+   "fieldname": "ai_provider",
+   "fieldtype": "Select",
+   "label": "Provider",
+   "options": "openrouter\nopenai\nnvidia\nollama\nollama_cloud\nmoonshot"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "openrouter_section",
+   "fieldtype": "Section Break",
+   "label": "OpenRouter"
+  },
+  {
+   "description": "openrouter.ai/keys. Falls back to the OPENROUTER_API_KEY environment variable when blank.",
+   "fieldname": "openrouter_api_key",
+   "fieldtype": "Password",
+   "label": "API Key"
+  },
+  {
+   "fieldname": "column_break_openrouter",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "nvidia/nemotron-3-super-120b-a12b:free",
+   "description": "The FAST tier's model (`agent/tiers.py`).",
+   "fieldname": "ai_model",
+   "fieldtype": "Data",
+   "label": "Primary Model"
+  },
+  {
+   "default": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "description": "The BALANCED tier's model - what a validation failure escalates to, and where a multi-table question starts.",
+   "fieldname": "ai_model_fallback",
+   "fieldtype": "Data",
+   "label": "Fallback Model"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "openai_section",
+   "fieldtype": "Section Break",
+   "label": "OpenAI"
+  },
+  {
+   "default": "API Key",
+   "description": "API Key: metered, billed per token against api.openai.com or the Base URL below. ChatGPT Subscription: bills against a connected ChatGPT Plus/Pro account instead - traffic is routed to the ChatGPT backend and the API Key is ignored while this is selected. There is no Claude-subscription equivalent: Anthropic has never published a consumer OAuth API for Claude.ai sessions (verified 2026-08 - only Claude Code's own device flow exists, which is scoped to Claude Code, not general API calls), so that option is not offered rather than shipped broken.",
+   "fieldname": "openai_auth_mode",
+   "fieldtype": "Select",
+   "label": "Authentication",
+   "options": "API Key\nChatGPT Subscription"
+  },
+  {
+   "depends_on": "eval:doc.openai_auth_mode != 'ChatGPT Subscription'",
+   "description": "platform.openai.com/api-keys, or the bearer token of your gateway. Falls back to OPENAI_API_KEY when blank.",
+   "fieldname": "openai_api_key",
+   "fieldtype": "Password",
+   "label": "API Key"
+  },
+  {
+   "default": "https://api.openai.com/v1",
+   "depends_on": "eval:doc.openai_auth_mode != 'ChatGPT Subscription'",
+   "fieldname": "openai_base_url",
+   "fieldtype": "Data",
+   "label": "Base URL"
+  },
+  {
+   "fieldname": "column_break_openai",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "gpt-5.6-terra",
+   "fieldname": "openai_model",
+   "fieldtype": "Data",
+   "label": "Model"
+  },
+  {
+   "depends_on": "eval:doc.openai_auth_mode == 'ChatGPT Subscription'",
+   "description": "Set by Connect/Disconnect on the AI Provider settings tab - not hand-edited.",
+   "fieldname": "chatgpt_oauth_account_label",
+   "fieldtype": "Data",
+   "label": "Connected ChatGPT Account",
+   "read_only": 1
+  },
+  {
+   "fieldname": "chatgpt_oauth_account_id",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "chatgpt_oauth_expires_at",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "chatgpt_oauth_access_token",
+   "fieldtype": "Password",
+   "hidden": 1
+  },
+  {
+   "fieldname": "chatgpt_oauth_refresh_token",
+   "fieldtype": "Password",
+   "hidden": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "nvidia_section",
+   "fieldtype": "Section Break",
+   "label": "NVIDIA NIM"
+  },
+  {
+   "description": "build.nvidia.com. Falls back to NVIDIA_API_KEY when blank.",
+   "fieldname": "nvidia_api_key",
+   "fieldtype": "Password",
+   "label": "API Key"
+  },
+  {
+   "fieldname": "column_break_nvidia",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "nvidia/nemotron-3-super-120b-a12b",
+   "fieldname": "nvidia_model",
+   "fieldtype": "Data",
+   "label": "Model"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "ollama_section",
+   "fieldtype": "Section Break",
+   "label": "Ollama"
+  },
+  {
+   "default": "http://localhost:11434",
+   "description": "A loopback address is ignored when the provider is Ollama Cloud, which is served from https://ollama.com.",
+   "fieldname": "ollama_base_url",
+   "fieldtype": "Data",
+   "label": "Base URL"
+  },
+  {
+   "description": "Ollama Cloud only - a local daemon needs no key. Falls back to OLLAMA_API_KEY when blank.",
+   "fieldname": "ollama_api_key",
+   "fieldtype": "Password",
+   "label": "API Key"
+  },
+  {
+   "fieldname": "column_break_ollama",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "llama3.1",
+   "fieldname": "ollama_model",
+   "fieldtype": "Data",
+   "label": "Model"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "moonshot_section",
+   "fieldtype": "Section Break",
+   "label": "Kimi (Moonshot)"
+  },
+  {
+   "default": "API Key",
+   "description": "Two separate services. A Moonshot Open Platform key is rejected by the Kimi Code endpoint, and a Kimi Code subscription serves the kimi-for-coding models rather than the Open Platform catalog.",
+   "fieldname": "moonshot_auth_mode",
+   "fieldtype": "Select",
+   "label": "Authentication",
+   "options": "API Key\nKimi Subscription"
+  },
+  {
+   "depends_on": "eval:doc.moonshot_auth_mode != 'Kimi Subscription'",
+   "description": "platform.moonshot.ai. Falls back to MOONSHOT_API_KEY when blank.",
+   "fieldname": "moonshot_api_key",
+   "fieldtype": "Password",
+   "label": "API Key"
+  },
+  {
+   "fieldname": "column_break_moonshot",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "kimi-k3",
+   "depends_on": "eval:doc.moonshot_auth_mode != 'Kimi Subscription'",
+   "fieldname": "moonshot_model",
+   "fieldtype": "Data",
+   "label": "Model"
+  },
+  {
+   "depends_on": "eval:doc.moonshot_auth_mode == 'Kimi Subscription'",
+   "description": "Set by Connect/Disconnect on the AI Provider settings tab - not hand-edited.",
+   "fieldname": "kimi_oauth_account_label",
+   "fieldtype": "Data",
+   "label": "Connected Kimi Account",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kimi_oauth_expires_at",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "kimi_oauth_access_token",
+   "fieldtype": "Password",
+   "hidden": 1
+  },
+  {
+   "fieldname": "kimi_oauth_refresh_token",
+   "fieldtype": "Password",
+   "hidden": 1
+  },
+  {
+   "description": "Stable per-site device id the Kimi Code grant is tied to.",
+   "fieldname": "kimi_device_id",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "ai_limits_section",
+   "fieldtype": "Section Break",
+   "label": "Schedule & Limits"
+  },
+  {
+   "default": "Daily",
+   "description": "How often the quota below resets. Disabled: it never resets on its own - the counter has to be cleared by hand.",
+   "fieldname": "quota_reset_schedule",
+   "fieldtype": "Select",
+   "label": "Quota Reset",
+   "options": "Disabled\nDaily\nWeekly\nMonthly"
+  },
+  {
+   "description": "The last time a model actually answered a question.",
+   "fieldname": "last_ai_answer",
+   "fieldtype": "Datetime",
+   "label": "Last AI Answer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ai_limits",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "100",
+   "description": "Model calls allowed per reset window. 0 means no cap.",
+   "fieldname": "daily_ai_quota",
+   "fieldtype": "Int",
+   "label": "Request Quota"
+  },
+  {
+   "description": "Model calls made in the current window.",
+   "fieldname": "ai_quota_used",
+   "fieldtype": "Int",
+   "label": "Quota Used",
+   "read_only": 1
+  },
+  {
+   "fieldname": "quota_window_start",
+   "fieldtype": "Datetime",
+   "hidden": 1,
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-08-12 00:00:00.000000",
+ "modified": "2026-08-15 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Nakhoda",
  "name": "Nakhoda Settings",

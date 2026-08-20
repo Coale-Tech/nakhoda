@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { askQuestion, openInspector } from "./fixtures/agent.js";
+import { askQuestion, askNoticeQuestion, askAssumptionsQuestion, openInspector } from "./fixtures/agent.js";
 
 /**
  * Phase 5 gate (`12-build-plan.md` §5): "provenance is rendered, not just
@@ -46,26 +46,32 @@ test("the realised SQL is one labelled action away, not an unlabelled disclosure
 	await expect(inspector).toContainText("412ms");
 });
 
-test.fixme(
-	"assumptions, ambiguity prompt and permission notice render with the answer",
-	async ({ page }) => {
-		/**
-		 * Unrunnable against the shipped build, and not because of the test:
-		 * `nakhoda.api.agent.ask` returns no assumption list, no ambiguity
-		 * counterfactual and no permission-exclusion count, so `src/agent.js`
-		 * deliberately leaves `assumptions` / `notice` unset rather than invent
-		 * them client-side (see its docstring). `AssumptionsBlock.vue`,
-		 * `AssumptionRow.vue`, `AmbiguityPrompt.vue` and `PermissionNotice.vue`
-		 * exist and are wired into `Turn.vue`'s slots; nothing fills them.
-		 *
-		 * Unblocked by: `engine/permissions.py` reporting the rows it removed,
-		 * and the generator emitting its assumption set - then this asserts the
-		 * §1/§3 surfaces on real data.
-		 */
-		await askQuestion(page);
-		const card = page.locator(".answer").first();
-		await expect(card.locator(".assumption-list")).toBeVisible();
-		await expect(card.locator(".ambiguity").getByRole("button")).toHaveCount(2);
-		await expect(card.locator(".perm-note")).toContainText(/records?.*outside your/);
-	},
-);
+test("the permission notice renders with the answer when rows were excluded", async ({ page }) => {
+	/**
+	 * `nakhoda.engine.pipeline.notice` (backend) reports the rows and, when
+	 * the pipeline names one clear sum measure, the amount a row-level
+	 * permission removed from this exact query - `14-frontend-design.md` §3's
+	 * answer to Insights issue #919. `src/agent.js` maps it straight through
+	 * to `PermissionNotice.vue`; nothing here fabricates it.
+	 */
+	await askNoticeQuestion(page);
+	const card = page.locator(".answer").first();
+	await expect(card.locator(".perm-note")).toContainText(/records? \(.*\) are outside your territory permissions/);
+});
+
+test("assumptions and the ambiguity prompt render with the answer", async ({ page }) => {
+	/**
+	 * `manager.ask()` validates the model's `ops_annotated` envelope through
+	 * `driver._valid_assumptions` and threads the result onto the response
+	 * (`nakhoda/agent/manager.py`); `src/agent.js`'s `buildAssumptions` reshapes
+	 * the flat list into what `AssumptionsBlock.vue`/`AssumptionRow.vue` render,
+	 * and the first `needs_you` entry carrying a counterfactual earns the one
+	 * `AmbiguityPrompt.vue` slot the component design allows (§1: two visual
+	 * states, "applied" grey vs "needs you" amber + inline prompt).
+	 */
+	await askAssumptionsQuestion(page);
+	const card = page.locator(".answer").first();
+	await expect(card.locator(".assumption-list")).toBeVisible();
+	await expect(card.locator(".assumption-list .assumption")).toHaveCount(2);
+	await expect(card.locator(".ambiguity").getByRole("button")).toHaveCount(2);
+});

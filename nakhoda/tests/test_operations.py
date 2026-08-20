@@ -17,6 +17,8 @@ from nakhoda.engine.operations import (
 	ML_OPERATIONS,
 	OPERATIONS,
 	OperationError,
+	query_reference,
+	source_tables,
 	split_pipeline,
 	validate_pipeline,
 )
@@ -142,6 +144,85 @@ class Score(unittest.TestCase):
 		with self.assertRaises(OperationError):
 			validate_pipeline([SOURCE, self.op(method="random_forest")])
 		validate_pipeline([SOURCE, self.op(method="logistic")])
+
+
+class Composition(unittest.TestCase):
+	"""A table slot may name another stored query - the capability the workbook's
+	derived queries and `linked_queries` closure are built on.
+
+	Pure here: `validate_pipeline` and `source_tables` never touch a database, so
+	the grammar's acceptance and the provenance walk are provable without a
+	fixture. `test_engine.py::Composition` proves the compiled result.
+	"""
+
+	def ref(self, name: str) -> dict:
+		return {"type": "query", "query_name": name}
+
+	def test_a_source_may_be_a_query_reference(self):
+		validate_pipeline([{"type": "source", "table": self.ref("q-base")}])
+
+	def test_a_join_may_read_a_query(self):
+		validate_pipeline(
+			[
+				SOURCE,
+				{
+					"type": "join",
+					"table": self.ref("q-base"),
+					"left_on": {"col": "customer"},
+					"right_on": {"col": "name"},
+					"select": [{"name": "tier", "expr": {"col": "tier"}}],
+				},
+			]
+		)
+
+	def test_a_table_object_must_be_a_query_reference(self):
+		for bad in ({"type": "table", "name": "x"}, {"query_name": "q"}, {"type": "query"}, 7, None, ""):
+			with self.assertRaises(OperationError, msg=repr(bad)):
+				validate_pipeline([{"type": "source", "table": bad}])
+
+	def test_query_reference_reads_the_one_shape(self):
+		self.assertEqual(query_reference(self.ref("q-base")), "q-base")
+		self.assertIsNone(query_reference("tabSales Invoice"))
+		self.assertIsNone(query_reference({"type": "query", "query_name": ""}))
+
+	def test_source_tables_names_physical_tables_only(self):
+		"""Provenance must answer with tables, not with the query in between -
+		a receipt naming `q-base` tells a reader nothing about what was read."""
+		ops = [{"type": "source", "table": self.ref("q-base")}]
+		base = {"q-base": [SOURCE, {"type": "limit", "n": 10}]}
+		self.assertEqual(source_tables(ops, base.get), ["tabSales Invoice"])
+
+	def test_source_tables_follows_more_than_one_hop(self):
+		stored = {
+			"q-top": [{"type": "source", "table": self.ref("q-mid")}],
+			"q-mid": [
+				SOURCE,
+				{
+					"type": "join",
+					"table": "tabSales Invoice Item",
+					"left_on": {"col": "name"},
+					"right_on": {"col": "parent"},
+					"select": [{"name": "qty", "expr": {"col": "qty"}}],
+				},
+			],
+		}
+		found = source_tables([{"type": "source", "table": self.ref("q-top")}], stored.get)
+		self.assertEqual(found, ["tabSales Invoice", "tabSales Invoice Item"])
+
+	def test_source_tables_survives_a_cycle(self):
+		"""Provenance is read-only and must not hang on a pair of queries that
+		reference each other - a user can save that one document at a time."""
+		stored = {
+			"a": [{"type": "source", "table": self.ref("b")}],
+			"b": [{"type": "source", "table": self.ref("a")}],
+		}
+		self.assertEqual(source_tables([{"type": "source", "table": self.ref("a")}], stored.get), [])
+
+	def test_source_tables_names_the_query_nothing_when_unresolvable(self):
+		"""Without a provider there is nothing to follow; the walk still returns
+		rather than raising, because the inspector must render for a pipeline
+		that runs."""
+		self.assertEqual(source_tables([{"type": "source", "table": self.ref("q")}]), [])
 
 
 if __name__ == "__main__":

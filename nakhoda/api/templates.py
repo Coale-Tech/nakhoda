@@ -36,6 +36,11 @@ from frappe import _
 from frappe.utils import cint
 from frappe.utils.synchronization import filelock
 
+from nakhoda.engine import cache, pipeline
+from nakhoda.engine.dashboard import normalise
+from nakhoda.engine.permissions import for_connector
+from nakhoda.nakhoda.doctype.nakhoda_query.nakhoda_query import provider as query_provider
+
 DOCTYPE = "Nakhoda Intelligence Template"
 MANIFEST_REQUIRED_KEYS = ("version", "title", "description", "required_apps", "source_doctypes")
 TEMPLATES_HOOK = "nakhoda_intelligence_templates"
@@ -53,9 +58,18 @@ TEMPLATE_FIELDS = ("key", "title", "icon", "color", "source", "metrics", "panels
 #: A `template.json` payload and `doc.get("panels")` both carry a Python list,
 #: so every write goes through `_for_doc` and every read through `_from_doc`.
 def _for_doc(payload: dict) -> dict:
+	"""Serialize `panels` for the JSON field, canonicalising it on the way in.
+
+	Both write paths - `_create` and `_replace_contents` - funnel through here
+	with `panels` and `metrics` in the same payload, which is the one place
+	`engine.dashboard.normalise` has everything it needs. Stored canonical
+	means every panel carries an `i` and a resolved `measure`, so `set_filter`
+	and `remove_item` name real targets on a freshly imported dashboard
+	instead of raising `PatchError`.
+	"""
 	out = dict(payload)
 	if isinstance(out.get("panels"), list):
-		out["panels"] = json.dumps(out["panels"])
+		out["panels"] = json.dumps(normalise(out["panels"], out.get("metrics") or []))
 	return out
 
 
@@ -233,6 +247,21 @@ def get_intelligence_templates() -> list[dict]:
 	return out
 
 
+@frappe.whitelist()
+def list_dashboards() -> list[dict]:
+	"""Instantiated dashboards - `Nakhoda Intelligence Template` records with
+	`from_template` set, newest-modified first. The shipped-but-not-yet-
+	imported entries `get_intelligence_templates` also returns never appear
+	here; this list is only what a user can actually open."""
+	fields = ["name", "key", "title", "icon", "color", "from_template", "modified"]
+	return frappe.get_all(
+		DOCTYPE,
+		fields=fields,
+		filters={"from_template": ["is", "set"]},
+		order_by="modified desc",
+	)
+
+
 def _find_imported(template_name: str) -> str | None:
 	"""This site's existing record for the template, if any (oldest wins)."""
 	return frappe.db.get_value(DOCTYPE, {"from_template": template_name}, "name", order_by="creation asc")
@@ -266,11 +295,73 @@ def _require_admin() -> None:
 	frappe.only_for(("Nakhoda Admin", "System Manager"))
 
 
+def _ensure_source(doc_name: str, payload: dict) -> None:
+	"""Link the template's own verified query, creating and approving it on
+	first import.
+
+	A dashboard with no `source` is not a dashboard: `get_dashboard_data`
+	returns `metrics_available: False` for it and every panel renders as an
+	empty layout. Every shipped `template.json` used to carry `"source": null`
+	with nothing on the site for it to point at, so all six templates imported
+	cleanly and then showed nothing - the defect this function exists to close.
+
+	The query belongs to the template, not to the site, so it ships in
+	`template.json` as `source_query` (a `question` plus `operations`) and is
+	created here rather than by hand. `source_query` is deliberately absent
+	from `TEMPLATE_FIELDS`: it is not a field on this doctype, and the
+	fingerprint `_stamp_version` takes must cover the `source` this produces,
+	not the recipe that produced it - otherwise a fresh import would read as
+	customized immediately and the `migrate`-time sync would skip it forever.
+
+	Idempotent three ways: an already-linked `source` is never relinked, a
+	query whose `question` already matches is reused rather than duplicated
+	(the same normalised equality `agent/verified.py` routes on, so a template
+	and the agent can never disagree about which query answers a question),
+	and a template shipping no `source_query` is left exactly as it was.
+	"""
+	from nakhoda.api import default_source
+
+	spec = payload.get("source_query") or {}
+	operations = spec.get("operations")
+	question = (spec.get("question") or "").strip()
+	if not operations or not question:
+		return
+	if frappe.db.get_value(DOCTYPE, doc_name, "source"):
+		return
+
+	existing = frappe.db.get_value("Nakhoda Verified Query", {"question": question}, "name")
+	if existing:
+		query_name = str(existing)
+		# a draft left behind by an earlier failed import answers nothing until
+		# it is approved (`nakhoda_verified_query.py` Gate A refuses docstatus 0)
+		if cint(frappe.db.get_value("Nakhoda Verified Query", existing, "docstatus")) == 0:
+			frappe.get_doc("Nakhoda Verified Query", query_name).submit()
+	else:
+		query = frappe.get_doc(
+			{
+				"doctype": "Nakhoda Verified Query",
+				"title": spec.get("title") or question,
+				"question": question,
+				"data_source": default_source(),
+				"operations": json.dumps(operations),
+			}
+		)
+		query.insert(ignore_permissions=True)
+		# submit, not a flag: approval is a Frappe permission, and `_require_admin`
+		# has already established the caller holds it
+		query.submit()
+		query_name = query.name
+
+	frappe.db.set_value(DOCTYPE, doc_name, "source", query_name, update_modified=False)
+
+
 def _create(template_name: str, manifest: dict) -> str:
-	payload = {k: v for k, v in get_template_payload(template_name).items() if k in TEMPLATE_FIELDS}
+	full = get_template_payload(template_name)
+	payload = {k: v for k, v in full.items() if k in TEMPLATE_FIELDS}
 	doc = frappe.get_doc({"doctype": DOCTYPE, **_for_doc(payload)})
 	doc.insert(ignore_permissions=True)
 	doc.db_set("from_template", template_name, update_modified=False)
+	_ensure_source(str(doc.name), full)
 	_reassign_to_administrator(doc.name)
 	_share_with_organization(doc.name)
 	_stamp_version(doc.name, manifest)
@@ -308,6 +399,95 @@ def create_intelligence_template(template_name: str) -> dict:
 		frappe.db.commit()  # nosemgrep — intentional commit inside the import lock
 
 	return {"name": doc_name}
+
+
+@frappe.whitelist()
+def get_dashboard_data(template_name: str) -> dict:
+	"""Compute this dashboard's metric values by appending one `summarize`
+	step - one measure per `Nakhoda Intelligence Metric` row - onto its
+	`source` query's own pipeline, then running that through the same
+	`engine.pipeline.run` every other execution surface uses. One execution
+	computes every metric at once; there is no per-metric round trip.
+
+	A missing source, an unverified source, or a malformed metric expression
+	is not an error: the dashboard still returns its `panels` layout, with
+	`metrics_available: False` and a reason, so a freshly-imported template
+	is visible immediately rather than throwing at load time.
+	"""
+	doc = frappe.get_doc(DOCTYPE, template_name)
+	doc.check_permission("read")
+	# Also normalised on read, not only on write: a site that imported this
+	# dashboard before `_for_doc` canonicalised anything still has raw shipped
+	# panels stored, and repairing them here fixes those records without a
+	# migration. `normalise` is idempotent, so a record already canonical
+	# round-trips unchanged.
+	panels = normalise(frappe.parse_json(doc.get("panels") or "[]"), doc.get("metrics") or [])
+	identity = {
+		"name": doc.name,
+		"key": doc.get("key"),
+		"title": doc.get("title"),
+		"icon": doc.get("icon"),
+		"color": doc.get("color"),
+	}
+
+	if not doc.get("source"):
+		return {
+			**identity,
+			"metrics": [],
+			"panels": panels,
+			"metrics_available": False,
+			"reason": _("No source query configured"),
+		}
+
+	query = frappe.get_doc("Nakhoda Verified Query", doc.get("source"))
+	if query.get("docstatus") != 1:
+		return {
+			**identity,
+			"metrics": [],
+			"panels": panels,
+			"metrics_available": False,
+			"reason": _("Source query is not verified"),
+		}
+
+	rows = list(doc.get("metrics") or [])
+	if not rows:
+		return {**identity, "metrics": [], "panels": panels, "metrics_available": True, "reason": None}
+
+	try:
+		measures = [
+			{"name": f"m{idx}", "expr": frappe.parse_json(row.get("expression"))}
+			for idx, row in enumerate(rows)
+		]
+		settings = frappe.get_cached_doc("Nakhoda Settings")
+		source = frappe.get_cached_doc("Nakhoda Data Source", query.get("data_source"))
+		connector = source.connector()
+		resolver = for_connector(connector, str(frappe.session.user))
+		ttl = int(settings.get("cache_ttl") or cache.DEFAULT_TTL)
+		ops = [*frappe.parse_json(query.get("operations")), {"type": "summarize", "measures": measures}]
+		result = pipeline.run(
+			ops,
+			resolver,
+			connector,
+			cap=1,
+			ttl=ttl,
+			queries=query_provider(str(query.get("data_source"))),
+		)
+	except Exception as exc:
+		frappe.log_error(title=f"Nakhoda: could not compute dashboard {template_name}")
+		return {**identity, "metrics": [], "panels": panels, "metrics_available": False, "reason": str(exc)}
+
+	record = result.frame.to_dict(orient="records")[0] if len(result.frame) else {}
+	metrics = [
+		{
+			"label": row.get("label"),
+			"value": record.get(f"m{idx}"),
+			"format": row.get("format"),
+			"target": row.get("target"),
+			"direction": row.get("direction"),
+		}
+		for idx, row in enumerate(rows)
+	]
+	return {**identity, "metrics": metrics, "panels": panels, "metrics_available": True, "reason": None}
 
 
 def _export(doc_name: str) -> dict:
@@ -356,13 +536,20 @@ def _replace_contents(doc_name: str, payload: dict) -> None:
 	there is no sibling child doctype to delete out from under the record the
 	way Insights must for `Insights Chart v3` et al."""
 	doc = frappe.get_doc(DOCTYPE, doc_name)
-	doc.update(_for_doc({field: payload.get(field) for field in TEMPLATE_FIELDS}))
+	fields = {field: payload.get(field) for field in TEMPLATE_FIELDS}
+	# a template ships `source: null` and names its query in `source_query`
+	# instead; overwriting with that null would unlink the query `_ensure_source`
+	# created and silently empty a working dashboard on every version bump
+	if not fields.get("source"):
+		fields.pop("source")
+	doc.update(_for_doc(fields))
 	doc.save(ignore_permissions=True)
 
 
 def _update_imported(template_name: str, doc_name: str, manifest: dict) -> None:
 	payload = get_template_payload(template_name)
 	_replace_contents(doc_name, payload)
+	_ensure_source(doc_name, payload)
 	_stamp_version(doc_name, manifest)
 
 

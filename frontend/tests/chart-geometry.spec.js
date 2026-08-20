@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { askQuestion } from "./fixtures/agent.js";
+import { askChartQuestion } from "./fixtures/agent.js";
 
 /**
  * Phase 5 gate (`12-build-plan.md` §5, gate index row "5 - charts do not
@@ -8,18 +8,19 @@ import { askQuestion } from "./fixtures/agent.js";
  * defects in the design mockup, invisible to repeated eyeballing and found
  * only by measuring rendered geometry - see the docstring in `Chart.vue`.
  *
- * No chart ships yet. `nakhoda.api.agent.ask` returns columns and rows;
- * nothing picks a chart type, so `src/agent.js` leaves `turn.answer.chart`
- * unset and `Turn.vue` renders the table branch. `Chart.vue` retains the
+ * `nakhoda.agent.charts.pick` (backend) infers a chart from a grouped
+ * result's shape and `src/agent.js` maps it onto `turn.answer.chart`, so
+ * `Turn.vue` renders `Chart.vue` for a two-column, few-row answer -
+ * `askChartQuestion` mocks exactly that shape. `Chart.vue` retains the
  * arithmetic that fixed both defects, and the measurement below is kept
- * verbatim so it runs the day a chart is emitted - the geometry claim is
- * asserted against a rendered DOM or not at all.
+ * verbatim - the geometry claim is asserted against a rendered DOM or not
+ * at all.
  *
- * The equivalent claim for the surface that *does* ship is measured in
- * `table-geometry.spec.js`.
+ * The equivalent claim for the surface that ships on every other answer is
+ * measured in `table-geometry.spec.js`.
  */
-test.fixme("bar height is proportional to its value within 2 percentage points", async ({ page }) => {
-	await askQuestion(page);
+test("bar height is proportional to its value within 2 percentage points", async ({ page }) => {
+	await askChartQuestion(page);
 	const bars = page.locator(".chart .bar");
 	const count = await bars.count();
 	expect(count).toBeGreaterThan(1);
@@ -46,8 +47,8 @@ test.fixme("bar height is proportional to its value within 2 percentage points",
 	}
 });
 
-test.fixme("axis label sits under the bar it names, 0px horizontal drift", async ({ page }) => {
-	await askQuestion(page);
+test("axis label sits under the bar it names, 0px horizontal drift", async ({ page }) => {
+	await askChartQuestion(page);
 	const bars = page.locator(".chart .bar-col");
 	const labels = page.locator(".chart .axis > div");
 	const count = await bars.count();

@@ -29,11 +29,13 @@ from typing import Any
 import ibis
 import ibis.expr.types as ir
 
+from nakhoda.engine.errors import GrammarError
+
 SCALAR = "scalar"
 AGGREGATE = "aggregate"
 
 
-class ExpressionError(ValueError):
+class ExpressionError(GrammarError):
 	"""A malformed or unadmitted expression."""
 
 

@@ -4,16 +4,21 @@
   "icon": "shopping-cart",
   "color": "#8B5CF6",
   "source": null,
+  "source_query": {
+    "title": "Procurement Analytics source",
+    "question": "Procurement Analytics dashboard source",
+    "operations": [{ "type": "source", "table": "tabPurchase Invoice" }]
+  },
   "metrics": [
     {
       "label": "Spend",
-      "expression": "sum(grand_total)",
+      "expression": "{\"fn\": \"sum\", \"args\": [{\"col\": \"grand_total\"}]}",
       "format": "Currency",
       "direction": "Lower Is Better"
     },
     {
       "label": "Active Suppliers",
-      "expression": "count_distinct(supplier)",
+      "expression": "{\"fn\": \"count_distinct\", \"args\": [{\"col\": \"supplier\"}]}",
       "format": "Number",
       "direction": "Higher Is Better"
     }

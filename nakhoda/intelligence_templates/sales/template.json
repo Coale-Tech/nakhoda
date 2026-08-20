@@ -4,16 +4,21 @@
   "icon": "trending-up",
   "color": "#3B82F6",
   "source": null,
+  "source_query": {
+    "title": "Sales Intelligence source",
+    "question": "Sales Intelligence dashboard source",
+    "operations": [{ "type": "source", "table": "tabSales Invoice" }]
+  },
   "metrics": [
     {
       "label": "Revenue",
-      "expression": "sum(grand_total)",
+      "expression": "{\"fn\": \"sum\", \"args\": [{\"col\": \"grand_total\"}]}",
       "format": "Currency",
       "direction": "Higher Is Better"
     },
     {
       "label": "Average Order Value",
-      "expression": "avg(grand_total)",
+      "expression": "{\"fn\": \"avg\", \"args\": [{\"col\": \"grand_total\"}]}",
       "format": "Currency",
       "direction": "Higher Is Better"
     }

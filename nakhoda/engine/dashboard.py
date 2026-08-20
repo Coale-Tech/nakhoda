@@ -152,6 +152,79 @@ def _next_id(panels: list[dict]) -> str:
 	return f"chart_{(max(existing) + 1) if existing else 1}"
 
 
+def _scrub(text: Any) -> str:
+	"""`frappe.scrub` (`frappe/__init__.py:840`) for the one case this module
+	needs - a metric label to the slug a shipped `template.json` writes in
+	`measure`. Mirrored rather than imported so the module stays runnable on a
+	bare interpreter, the same reason nothing else here touches Frappe."""
+	return str(text or "").replace(" ", "_").replace("-", "_").lower()
+
+
+def normalise(panels: Sequence[Any] | None, metrics: Sequence[Any] | None = None) -> list[dict]:
+	"""Canonicalise `panels[]` so every item is patchable and executable.
+
+	A shipped template writes the shape a human writes -
+	`{type: "line", title, measure: "net_movement", x: "posting_date"}` - while
+	`add_chart` writes the canonical one. Since `_index()` matches on `i`,
+	`set_filter` and `remove_item` raised `PatchError` for *every* shipped
+	panel: the agent could add a chart to a dashboard but never filter or
+	remove one that shipped with it.
+
+	Three fixes, all here:
+
+	- **`i` is stamped** by position (`panel_1`, `panel_2`, ...) on any panel
+	  lacking one. Positional so it is stable across calls - the same panel
+	  keeps the same id whether it was normalised at import or on read - and
+	  distinct from `_next_id`'s `chart_N` so a stamped id can never collide
+	  with one the agent is about to mint.
+	- **`type`/`x` are mapped** onto `chart_type`/`dimension`. A shipped
+	  `type: "line"` names the *geometry*; canonical `type` is always
+	  `"chart"`.
+	- **`measure` is linked** to the metric whose label scrubs to it. Shipped
+	  `"net_movement"` is `scrub("Net Movement")` - the link was intended and
+	  no code performed it, which is why panels rendered as title-only
+	  placeholders. Resolving to the *label* rather than copying the
+	  expression keeps one copy of the expression (on the metric row, where an
+	  edit reaches every reader) and makes this idempotent: a normalised
+	  `"Net Movement"` scrubs back to the same slug next time.
+
+	Pure, and tolerant by design: an unmatched `measure` is left verbatim
+	rather than dropped, so a panel referring to a metric this dashboard no
+	longer carries still renders its title instead of vanishing. `metrics`
+	rows are read through `.get` rather than as mappings, so a live
+	`Nakhoda Intelligence Metric` child row and a `template.json` dict both
+	work without this module importing Frappe to tell them apart.
+	"""
+	by_slug: dict[str, Any] = {}
+	for metric in metrics or ():
+		label = metric.get("label") if hasattr(metric, "get") else None
+		if label:
+			by_slug.setdefault(_scrub(label), label)
+
+	out: list[dict] = []
+	for idx, panel in enumerate(panels or ()):
+		if not isinstance(panel, Mapping):
+			continue
+		kind = panel.get("type")
+		item_id = panel.get("i")
+		measure = panel.get("measure")
+		out.append(
+			{
+				**panel,
+				"i": item_id if isinstance(item_id, str) and item_id else f"panel_{idx + 1}",
+				"type": "chart",
+				"chart_type": panel.get("chart_type") or (kind if kind and kind != "chart" else "bar"),
+				"query": panel.get("query"),
+				"dimension": panel.get("dimension") or panel.get("x"),
+				"measure": by_slug.get(_scrub(measure), measure) if measure else measure,
+				"title": panel.get("title") or measure or f"panel_{idx + 1}",
+				"filters": list(panel.get("filters") or []),
+				"removed": bool(panel.get("removed")),
+			}
+		)
+	return out
+
+
 def apply_patch(panels: Sequence[dict], ops: Any) -> tuple[list[dict], list[dict]]:
 	"""Validate `ops`, apply them to `panels`, and return `(new_panels, diff)`.
 
@@ -226,4 +299,4 @@ def apply_patch(panels: Sequence[dict], ops: Any) -> tuple[list[dict], list[dict
 	return new_panels, diff
 
 
-__all__ = ["PATCH_OPS", "PatchError", "apply_patch", "validate_patch"]
+__all__ = ["PATCH_OPS", "PatchError", "apply_patch", "normalise", "validate_patch"]

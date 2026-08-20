@@ -4,16 +4,21 @@
   "icon": "dollar-sign",
   "color": "#10B981",
   "source": null,
+  "source_query": {
+    "title": "Financial Analytics source",
+    "question": "Financial Analytics dashboard source",
+    "operations": [{ "type": "source", "table": "tabGL Entry" }]
+  },
   "metrics": [
     {
       "label": "Net Movement",
-      "expression": "sum(debit) - sum(credit)",
+      "expression": "{\"fn\": \"sub\", \"args\": [{\"fn\": \"sum\", \"args\": [{\"col\": \"debit\"}]}, {\"fn\": \"sum\", \"args\": [{\"col\": \"credit\"}]}]}",
       "format": "Currency",
       "direction": "Higher Is Better"
     },
     {
       "label": "Posting Volume",
-      "expression": "count_distinct(voucher_no)",
+      "expression": "{\"fn\": \"count_distinct\", \"args\": [{\"col\": \"voucher_no\"}]}",
       "format": "Number",
       "direction": "Higher Is Better"
     }

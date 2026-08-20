@@ -4,16 +4,21 @@
   "icon": "package",
   "color": "#F59E0B",
   "source": null,
+  "source_query": {
+    "title": "Inventory Insights source",
+    "question": "Inventory Insights dashboard source",
+    "operations": [{ "type": "source", "table": "tabBin" }]
+  },
   "metrics": [
     {
       "label": "Stock Value",
-      "expression": "sum(stock_value)",
+      "expression": "{\"fn\": \"sum\", \"args\": [{\"col\": \"stock_value\"}]}",
       "format": "Currency",
       "direction": "Higher Is Better"
     },
     {
-      "label": "Items Below Reorder",
-      "expression": "count_if(actual_qty < reorder_level)",
+      "label": "Items Out of Stock",
+      "expression": "{\"fn\": \"sum\", \"args\": [{\"fn\": \"lte\", \"args\": [{\"col\": \"actual_qty\"}, {\"lit\": 0}]}]}",
       "format": "Number",
       "direction": "Lower Is Better"
     }
